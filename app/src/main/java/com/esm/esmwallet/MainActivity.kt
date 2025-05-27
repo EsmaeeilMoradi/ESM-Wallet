@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.esm.esmwallet.presentation.home.HomeScreen
 import com.esm.esmwallet.presentation.viewmodel.WalletViewModel
 import com.esm.esmwallet.ui.theme.ESMWalletTheme
 
@@ -97,21 +98,21 @@ fun MainScreen() {
         }
     ) { innerPadding ->
         NavHost(navController, startDestination = BottomNavItem.Home.route) {
-            composable(BottomNavItem.Home.route) {
-                val walletViewModel: WalletViewModel = viewModel()
-                val ethBalance by walletViewModel.ethBalance.collectAsState()
+            composable(BottomNavItem.Home.route) { backStackEntry ->
+                val walletViewModel: WalletViewModel = viewModel(backStackEntry)
+                HomeScreen(paddingValues = innerPadding, walletViewModel = walletViewModel)
 
-                Column(modifier = Modifier.padding(innerPadding)) {
-                    Text(
-                        text = "Home Screen Content",
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = "ETH Balance: $ethBalance",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
+//                Column(modifier = Modifier.padding(innerPadding)) {
+//                    Text(
+//                        text = "Home Screen Content",
+//                        style = MaterialTheme.typography.headlineMedium,
+//                        modifier = Modifier.padding(bottom = 8.dp)
+//                    )
+//                    Text(
+//                        text = "ETH Balance: $ethBalance",
+//                        style = MaterialTheme.typography.bodyLarge
+//                    )
+//                }
 
             }
             composable(BottomNavItem.Trending.route) {

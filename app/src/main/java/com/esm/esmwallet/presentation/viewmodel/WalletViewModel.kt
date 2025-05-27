@@ -1,25 +1,38 @@
 package com.esm.esmwallet.presentation.viewmodel
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.esm.esmwallet.data.repository.WalletRepositoryImpl
 import com.esm.esmwallet.domain.usecase.GetEthBalanceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
 
+import com.esm.esmwallet.data.model.Token
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+
+
 class WalletViewModel : ViewModel() {
+
     private val getEthBalanceUseCase = GetEthBalanceUseCase(WalletRepositoryImpl())
+
     private val _ethBalance = MutableStateFlow<String>("Loading...")
     val ethBalance: StateFlow<String> = _ethBalance
+
+    private val _tokens = MutableStateFlow<List<Token>>(emptyList())
+    val tokens: StateFlow<List<Token>> = _tokens.asStateFlow()
 
     val testWalletAddress = "0xYourActualEthereumWalletAddressHere"
 
     init {
         fetchEthBalance(testWalletAddress)
+        _tokens.value = listOf(
+            Token("Ethereum", "ETH", _ethBalance.value, Icons.Default.Info)
+        )
     }
 
     fun fetchEthBalance(address: String) {
@@ -29,7 +42,17 @@ class WalletViewModel : ViewModel() {
                 val balanceEther = BigDecimal(balanceWei)
                     .divide(BigDecimal(10).pow(18), 4, RoundingMode.HALF_UP)
                     .toPlainString()
+
                 _ethBalance.value = "$balanceEther ETH"
+
+                _tokens.value = _tokens.value.map { token ->
+                    if (token.symbol == "ETH") {
+                        token.copy(balance = _ethBalance.value)
+                    } else {
+                        token
+                    }
+                }
+
             } catch (e: Exception) {
                 _ethBalance.value = "Error: ${e.localizedMessage}"
                 e.printStackTrace()
