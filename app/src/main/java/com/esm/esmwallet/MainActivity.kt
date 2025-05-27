@@ -53,8 +53,8 @@ sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: 
     object Home : BottomNavItem("Home", Icons.Default.Home, "home")
     object Trending : BottomNavItem("Trending", Icons.Default.Info, "trending")
     object Swap : BottomNavItem("Swap", Icons.Default.Settings, "swap")
-    object Earn : BottomNavItem("Earn", Icons.Default.Settings, "earn") // اضافه شد
-    object Discover : BottomNavItem("Discover", Icons.Default.Settings, "discover") // اضافه شد
+    object Earn : BottomNavItem("Earn", Icons.Default.Settings, "earn")
+    object Discover : BottomNavItem("Discover", Icons.Default.Settings, "discover")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -105,7 +105,7 @@ fun MainScreen() {
                     Text(
                         text = "Home Screen Content",
                         style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(bottom = 8.dp) // اضافه کردن padding
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Text(
                         text = "ETH Balance: $ethBalance",
