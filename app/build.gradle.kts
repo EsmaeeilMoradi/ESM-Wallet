@@ -60,6 +60,7 @@ dependencies {
     // Kotlin Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.web3j.core)
 
     // Debugging and Testing Compose
     debugImplementation(libs.androidx.ui.tooling)
