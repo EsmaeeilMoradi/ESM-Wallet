@@ -15,12 +15,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.esm.esmwallet.R
 import com.esm.esmwallet.data.model.Token
-
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 
 
 @Composable
@@ -34,7 +33,7 @@ fun TokenItem(token: Token, modifier: Modifier = Modifier) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = token.icon,
+                painter = painterResource(id = token.iconResId),
                 contentDescription = token.name,
                 modifier = Modifier.size(40.dp)
             )
@@ -53,6 +52,6 @@ fun TokenItem(token: Token, modifier: Modifier = Modifier) {
 @Composable
 fun PreviewTokenItem() {
     MaterialTheme {
-        TokenItem(token = Token("Ethereum", "ETH", "1.2345 ETH", Icons.Default.Info))
+        TokenItem(token = Token("Ethereum", "ETH", "1.2345 ETH", R.drawable.eth))
     }
 }

@@ -2,6 +2,8 @@ package com.esm.esmwallet.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.esm.esmwallet.R
+import com.esm.esmwallet.data.model.Token
 import com.esm.esmwallet.data.repository.WalletRepositoryImpl
 import com.esm.esmwallet.domain.usecase.GetEthBalanceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,10 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
-
-import com.esm.esmwallet.data.model.Token
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 
 
 class WalletViewModel : ViewModel() {
@@ -31,7 +29,15 @@ class WalletViewModel : ViewModel() {
     init {
         fetchEthBalance(testWalletAddress)
         _tokens.value = listOf(
-            Token("Ethereum", "ETH", _ethBalance.value, Icons.Default.Info)
+
+            Token(
+                "Ethereum",
+                "ETH",
+                _ethBalance.value,
+                R.drawable.eth
+            ),
+            Token("Bitcoin", "BTC", "0.0000 BTC", R.drawable.btc),
+            Token("Tether USD", "USDT", "0.00 USDT", R.drawable.usdt)
         )
     }
 
@@ -47,7 +53,9 @@ class WalletViewModel : ViewModel() {
 
                 _tokens.value = _tokens.value.map { token ->
                     if (token.symbol == "ETH") {
-                        token.copy(balance = _ethBalance.value)
+                        token.copy(balance = _ethBalance.value, iconResId = R.drawable.eth)
+
+
                     } else {
                         token
                     }
