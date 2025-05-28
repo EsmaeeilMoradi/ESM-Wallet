@@ -32,6 +32,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.esm.esmwallet.presentation.home.HomeScreen
+import com.esm.esmwallet.presentation.send.SendScreen
 import com.esm.esmwallet.presentation.viewmodel.WalletViewModel
 import com.esm.esmwallet.ui.theme.ESMWalletTheme
 
@@ -115,8 +116,11 @@ fun MainScreen() {
 //                }
 
             }
-            composable(BottomNavItem.Trending.route) {
-                Text(text = "Trending Screen Content", modifier = Modifier.padding(innerPadding))
+            composable(BottomNavItem.Trending.route) {backStackEntry->
+//                Text(text = "Trending Screen Content", modifier = Modifier.padding(innerPadding))
+                val walletViewModel: WalletViewModel = viewModel(backStackEntry)
+                SendScreen(paddingValues = innerPadding, walletViewModel = walletViewModel)
+
             }
             composable(BottomNavItem.Swap.route) {
                 Text(text = "Swap Screen Content", modifier = Modifier.padding(innerPadding))
@@ -126,6 +130,10 @@ fun MainScreen() {
             }
             composable(BottomNavItem.Discover.route) {
                 Text(text = "Discover Screen Content", modifier = Modifier.padding(innerPadding))
+            }
+            composable("send_screen") { backStackEntry ->
+                val walletViewModel: WalletViewModel = viewModel(backStackEntry)
+                SendScreen(paddingValues = innerPadding, walletViewModel = walletViewModel)
             }
         }
     }
