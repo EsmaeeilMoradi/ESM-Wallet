@@ -62,6 +62,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.web3j.core)
 
+    //QR Code generation
+    implementation(libs.zxing.android.embedded)
+    // Core ZXing library
+    implementation(libs.core.zxing)
+
     // Debugging and Testing Compose
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
