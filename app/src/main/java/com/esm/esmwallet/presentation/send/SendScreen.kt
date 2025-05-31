@@ -36,6 +36,7 @@ fun SendScreen(
     var amountToSend by remember { mutableStateOf("") }
 
     val ethBalance by walletViewModel.ethBalance.collectAsState()
+    val sendStatus by walletViewModel.sendStatus.collectAsState()
 
     Column(
         modifier = modifier
@@ -93,6 +94,7 @@ fun SendScreen(
 
         Button(
             onClick = {
+                walletViewModel.sendEth(recipientAddress, amountToSend)
                 Log.d("SendScreen", "Send Button Clicked")
                 Log.d("SendScreen", "Recipient: $recipientAddress, Amount: $amountToSend")
             },
@@ -100,6 +102,15 @@ fun SendScreen(
             enabled = recipientAddress.isNotBlank() && amountToSend.isNotBlank() && amountToSend.toDoubleOrNull() != null
         ) {
             Text("Send")
+        }
+
+        sendStatus?.let { status ->
+            Text(
+                text = status,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (status.startsWith("Error")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
     }
 }

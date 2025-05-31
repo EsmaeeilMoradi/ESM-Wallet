@@ -15,7 +15,7 @@ kotlinxCoroutines = "1.8.0"
 # Web3j
 web3j = "5.0.0"
 zxingAndroidEmbedded = "4.3.0"
-core = "3.5.3"
+core-zxing = "3.5.3"
 
 # Dagger Hilt
 # hilt = "2.51.1"
@@ -43,7 +43,7 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 
 web3j-core = { group = "org.web3j", name = "core", version.ref = "web3j" }
 zxing-android-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
-core-zxing = { group = "com.google.zxing", name = "core", version.ref = "core" }
+core-zxing = { group = "com.google.zxing", name = "core", version.ref = "core-zxing" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
