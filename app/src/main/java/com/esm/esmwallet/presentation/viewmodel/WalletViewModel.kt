@@ -24,7 +24,7 @@ class WalletViewModel : ViewModel() {
     private val _tokens = MutableStateFlow<List<Token>>(emptyList())
     val tokens: StateFlow<List<Token>> = _tokens.asStateFlow()
 
-    val testWalletAddress = "0xYourActualEthereumWalletAddressHere"
+    val testWalletAddress = "0x2c6497d4492cdBAbB38D226353d5C656d4D71eB8"
 
     init {
         fetchEthBalance(testWalletAddress)
