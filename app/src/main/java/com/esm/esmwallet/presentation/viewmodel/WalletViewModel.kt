@@ -7,7 +7,7 @@ import com.esm.esmwallet.R
 import com.esm.esmwallet.data.model.Token
 import com.esm.esmwallet.data.repository.WalletRepositoryImpl
 import com.esm.esmwallet.domain.usecase.GetEthBalanceUseCase
-import com.esm.esmwallet.domain.usecase.SendEthUseCase // <--- ایمپورت جدید
+import com.esm.esmwallet.domain.usecase.SendEthUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,15 +30,16 @@ class WalletViewModel : ViewModel() {
     private val getEthBalanceUseCase = GetEthBalanceUseCase(walletRepository)
     private val sendEthUseCase = SendEthUseCase(walletRepository)
 
-    private val _ethBalance = MutableStateFlow("Loading...")
-    val ethBalance: StateFlow<String> = _ethBalance.asStateFlow()
+    private val _ethBalance = MutableStateFlow<String>("Loading...")
+    val ethBalance: StateFlow<String> = _ethBalance
 
     private val _tokens = MutableStateFlow<List<Token>>(emptyList())
     val tokens: StateFlow<List<Token>> = _tokens.asStateFlow()
 
     private val _sendStatus = MutableStateFlow<String?>(null)
     val sendStatus: StateFlow<String?> = _sendStatus.asStateFlow()
-
+    private val _daiBalance = MutableStateFlow<String>("Loading...")
+    val daiBalance: StateFlow<String> = _daiBalance
     init {
         fetchEthBalance(testWalletAddress)
         _tokens.value = listOf(
@@ -102,4 +103,34 @@ class WalletViewModel : ViewModel() {
             }
         }
     }
+    suspend fun getErc20TokenBalance(tokenContractAddress: String, walletAddress: String): BigInteger {
+        return walletRepository.getErc20TokenBalance(tokenContractAddress, walletAddress)
+    }
+
+    fun loadEthBalance(walletAddress: String) {
+        viewModelScope.launch {
+            try {
+                val balance = walletRepository.getEthBalance(walletAddress)
+                _ethBalance.value = balance.toString()
+            } catch (e: Exception) {
+                Log.e("ESMWallet", "Error loading ETH balance: ${e.localizedMessage}", e)
+                _ethBalance.value = "Error fetching balance" // یا ""
+            }
+        }
+    }
+
+
+    fun loadDaiBalance(tokenContractAddress: String, walletAddress: String) {
+        viewModelScope.launch {
+            try {
+                val rawBalance = walletRepository.getErc20TokenBalance(tokenContractAddress, walletAddress)
+                val formattedBalance = Convert.fromWei(rawBalance.toBigDecimal(), Convert.Unit.ETHER).toPlainString()
+                _daiBalance.value = formattedBalance + " DAI"
+            } catch (e: Exception) {
+                Log.e("ESMWallet", "Error loading DAI balance: ${e.localizedMessage}", e)
+                _daiBalance.value = "Error fetching DAI"
+            }
+        }
+    }
+
 }

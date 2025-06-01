@@ -10,7 +10,14 @@ import org.web3j.protocol.core.DefaultBlockParameterName
 import org.web3j.protocol.http.HttpService
 import org.web3j.utils.Numeric
 import java.math.BigInteger
-
+import org.web3j.abi.FunctionEncoder
+import org.web3j.abi.FunctionReturnDecoder
+import org.web3j.abi.TypeReference
+import org.web3j.abi.datatypes.Address
+import org.web3j.abi.datatypes.Function
+import org.web3j.abi.datatypes.Type
+import org.web3j.abi.datatypes.generated.Uint256
+import java.util.Arrays
 
 class WalletRepositoryImpl : WalletRepository {
 
@@ -91,4 +98,45 @@ class WalletRepositoryImpl : WalletRepository {
             }
         }}
 
+    //  ERC-20 ---
+    override suspend fun getErc20TokenBalance(tokenContractAddress: String, walletAddress: String): BigInteger {
+        return withContext(Dispatchers.IO) {
+            try {
+                val function = Function(
+                    "balanceOf",
+                    Arrays.asList<Type<*>>(Address(walletAddress)),
+                    Arrays.asList<TypeReference<*>>(object : TypeReference<Uint256>() {})
+                )
+
+                val encodedFunction = FunctionEncoder.encode(function)
+
+                val ethCall = web3j.ethCall(
+                    org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
+                        null,
+                        tokenContractAddress,
+                        encodedFunction
+                    ),
+                    DefaultBlockParameterName.LATEST
+                ).send()
+
+                if (ethCall.hasError()) {
+                    throw Exception("Failed to get ERC-20 balance: ${ethCall.error.message}")
+                }
+
+                val results = FunctionReturnDecoder.decode(
+                    ethCall.value,
+                    function.outputParameters
+                )
+
+                if (results.isNotEmpty() && results[0] is Uint256) {
+                    return@withContext (results[0] as Uint256).value
+                } else {
+                    throw Exception("Could not decode ERC-20 balance from contract call.")
+                }
+
+            } catch (e: Exception) {
+                throw Exception("Failed to get ERC-20 token balance: ${e.localizedMessage}", e)
+            }
+        }
+        }
 }

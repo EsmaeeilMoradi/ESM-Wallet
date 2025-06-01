@@ -40,6 +40,9 @@ fun HomeScreen(
     val ethBalance by walletViewModel.ethBalance.collectAsState()
     val tokens by walletViewModel.tokens.collectAsState()
 
+    walletViewModel.loadDaiBalance(tokenContractAddress = "0x82fb927676b53b6ee07904780c7be9b4b50db80b", walletAddress = "0x2c6497d4492cdBAbB38D226353d5C656d4D71eB8")
+    val daiBalance by walletViewModel.daiBalance.collectAsState()
+
     Column(modifier = modifier.padding(paddingValues)) {
         Text(
             text = "Total Balance",
@@ -48,6 +51,16 @@ fun HomeScreen(
         )
         Text(
             text = ethBalance,
+            style = MaterialTheme.typography.headlineLarge,
+            modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
+        )
+        Text(
+            text = "DAIBalance",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp)
+        )
+        Text(
+            text = daiBalance,
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
         )

@@ -1,6 +1,7 @@
 package com.esm.esmwallet
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,6 +42,24 @@ class MainActivity : ComponentActivity() {
             ESMWalletTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     MainScreen()
+                    val walletViewModel: WalletViewModel = viewModel()
+                    val myWalletAddress = "0x2c6497d4492cdBAbB38D226353d5C656d4D71eB8" // **آدرس کیف پول شخصی خودت در Sepolia که DAI یا ETH داری**
+
+                    LaunchedEffect(Unit) {
+                        try {
+                            val daiBalance = walletViewModel.getErc20TokenBalance(
+                                tokenContractAddress = "0x82fb927676b53b6ee07904780c7be9b4b50db80b",
+                                walletAddress = myWalletAddress
+                            )
+                            Log.d("ESMWallet", "DAI Balance: $daiBalance WEI")
+
+                             walletViewModel.loadEthBalance(myWalletAddress)
+
+                        } catch (e: Exception) {
+                            Log.e("ESMWallet", "Error getting DAI balance: ${e.localizedMessage}", e)
+                        }
+                    }
+
                 }
             }
         }

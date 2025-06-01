@@ -10,5 +10,6 @@ interface WalletRepository {
         toAddress: String,
         amountWei: BigInteger
     ): String //  Transaction Hash
-
+    //  ERC-20 ---
+    suspend fun getErc20TokenBalance(tokenContractAddress: String, walletAddress: String): BigInteger
 }
