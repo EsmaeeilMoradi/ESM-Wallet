@@ -1,5 +1,6 @@
 package com.esm.esmwallet.data.repository
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.web3j.crypto.Credentials
@@ -23,8 +24,7 @@ import java.util.Arrays
 
 class WalletRepositoryImpl : WalletRepository {
 
-    private val nodeUrl =
-        "https://dawn-newest-morning.ethereum-sepolia.quiknode.pro/704573517106871d7fba269128fcdce8acd1e0a2/"
+    private val nodeUrl ="https://eth-sepolia.g.alchemy.com/v2/A3yCGdMaP7z1P3UoUyiP5YfAshA6jBii"
     private val web3j: Web3j by lazy {
         Web3j.build(HttpService(nodeUrl))
     }
@@ -38,6 +38,31 @@ class WalletRepositoryImpl : WalletRepository {
                     walletAddress,
                     DefaultBlockParameterName.LATEST
                 ).send()
+
+                // *** Alchemy/Web3j ***
+                Log.d("ETH_DEBUG", "----------------------------------------------------")
+                Log.d("ETH_DEBUG", "Calling ethGetBalance for address: $walletAddress")
+                Log.d("ETH_DEBUG", "EthGetBalance raw response JSON: ${ethGetBalance.jsonrpc}") // Shows jsonrpc version
+                Log.d("ETH_DEBUG", "EthGetBalance ID: ${ethGetBalance.id}")
+                Log.d("ETH_DEBUG", "EthGetBalance result (hex value): ${ethGetBalance.result}")
+                Log.d("ETH_DEBUG", "EthGetBalance hasError: ${ethGetBalance.hasError()}")
+
+
+                if (ethGetBalance.hasError()) {
+                    val errorMessage = ethGetBalance.error?.message ?: "Unknown error"
+                    Log.e("ETH_DEBUG", "EthGetBalance error message: $errorMessage")
+                    throw Exception("Failed to get ETH balance: $errorMessage")
+                }
+                if (ethGetBalance.result.isNullOrEmpty()) {
+                    Log.e("ETH_DEBUG", "EthGetBalance result is null or empty, but no explicit error.")
+                    throw Exception("Failed to get ETH balance: Empty result from API")
+                }
+
+                val balanceWei = ethGetBalance.balance
+                Log.d("ETH_DEBUG", "EthGetBalance parsed balance (BigInteger Wei): $balanceWei")
+                Log.d("ETH_DEBUG", "----------------------------------------------------")
+
+
                 ethGetBalance.balance
             } catch (e: Exception) {
                 throw Exception("Failed to get ETH balance: ${e.localizedMessage}", e)
@@ -120,6 +145,7 @@ class WalletRepositoryImpl : WalletRepository {
                 )
 
                 val encodedFunction = FunctionEncoder.encode(function)
+                Log.d("ERC20_DEBUG", "Encoded balanceOf function: $encodedFunction")
 
                 val ethCall = web3j.ethCall(
                     org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
@@ -223,6 +249,94 @@ class WalletRepositoryImpl : WalletRepository {
                 }
             } catch (e: Exception) {
                 throw Exception("Failed to get ERC-20 token symbol: ${e.localizedMessage}", e)
+            }
+        }
+    }
+
+    // Implementation for sending ERC-20 tokens
+    override suspend fun sendErc20Token(
+        privateKey: String,
+        tokenContractAddress: String,
+        toAddress: String,
+        amount: BigInteger
+    ): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val credentials = Credentials.create(privateKey)
+
+                // 1. Get Nonce
+                val nonce = web3j.ethGetTransactionCount(
+                    credentials.address,
+                    DefaultBlockParameterName.LATEST
+                ).send().transactionCount
+
+                // 2. Gas Price (EIP-1559 Transaction)
+                // For ERC-20 transactions, it's better to use EIP-1559 style gas estimation if the network supports it.
+                // However, for simplicity and compatibility with your existing ETH send, we'll stick to legacy gas price for now.
+                // In a real app, you would fetch maxFeePerGas and maxPriorityFeePerGas.
+                val gasPriceResult = web3j.ethGasPrice().send()
+                if (gasPriceResult.hasError()) {
+                    throw Exception("Failed to get gas price for ERC-20 transaction: ${gasPriceResult.error.message}")
+                }
+                val gasPrice = gasPriceResult.gasPrice
+
+                // 3. Encode the transfer function call for ERC-20
+                // function transfer(address _to, uint256 _value) returns (bool success)
+                val function = Function(
+                    "transfer",
+                    Arrays.asList<Type<*>>(Address(toAddress), Uint256(amount)),
+                    Arrays.asList<TypeReference<*>>(object :
+                        TypeReference<org.web3j.abi.datatypes.Bool>() {})
+                )
+                val encodedFunction = FunctionEncoder.encode(function)
+
+                // 4. Estimate Gas Limit for ERC-20 transaction
+                // This is crucial for ERC-20 as gas limit is not fixed at 21000
+                val gasLimitResponse = web3j.ethEstimateGas(
+                    org.web3j.protocol.core.methods.request.Transaction.createFunctionCallTransaction(
+                        credentials.address,
+                        nonce,
+                        gasPrice,
+                        BigInteger.ZERO, // Value is 0 for ERC-20 transfers
+                        tokenContractAddress,
+                        encodedFunction
+                    )
+                ).send()
+
+                if (gasLimitResponse.hasError()) {
+                    throw Exception("Failed to estimate gas for ERC-20 transaction: ${gasLimitResponse.error.message}")
+                }
+                val gasLimit = gasLimitResponse.amountUsed // Use the estimated gas limit
+
+                // 5. Create the RawTransaction (Legacy style, sending to the token contract)
+                val rawTransaction = RawTransaction.createTransaction(
+                    nonce,
+                    gasPrice,
+                    gasLimit,
+                    tokenContractAddress, // Destination is the token contract itself
+                    BigInteger.ZERO, // Value is 0 ETH for token transfers
+                    encodedFunction // Data field contains the encoded function call
+                )
+
+                // 6. Sign the transaction
+                val signedMessage =
+                    TransactionEncoder.signMessage(rawTransaction, chainId, credentials)
+                val hexValue = Numeric.toHexString(signedMessage)
+
+                // 7. Send the signed transaction
+                val ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send()
+
+                // 8. Check for errors
+                if (ethSendTransaction.hasError()) {
+                    val error = ethSendTransaction.error
+                    throw Exception("ERC-20 Transaction error: ${error?.message ?: "Unknown error"}")
+                }
+
+                // 9. Return transaction hash
+                ethSendTransaction.transactionHash
+
+            } catch (e: Exception) {
+                throw Exception("Failed to send ERC-20 token: ${e.localizedMessage}", e)
             }
         }
     }
