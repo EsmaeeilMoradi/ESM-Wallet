@@ -37,33 +37,34 @@ fun HomeScreen(
     paddingValues: androidx.compose.foundation.layout.PaddingValues,
     walletViewModel: WalletViewModel = viewModel()
 ) {
-    val ethBalance by walletViewModel.ethBalance.collectAsState()
+    //  Now we only collect the list of tokens
     val tokens by walletViewModel.tokens.collectAsState()
 
-    walletViewModel.loadDaiBalance(tokenContractAddress = "0x82fb927676b53b6ee07904780c7be9b4b50db80b", walletAddress = "0x2c6497d4492cdBAbB38D226353d5C656d4D71eB8")
-    val daiBalance by walletViewModel.daiBalance.collectAsState()
-
     Column(modifier = modifier.padding(paddingValues)) {
-        Text(
-            text = "Total Balance",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp)
-        )
-        Text(
-            text = ethBalance,
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
-        )
-        Text(
-            text = "DAIBalance",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp)
-        )
-        Text(
-            text = daiBalance,
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
-        )
+        //  Display Total Balance from the ETH token in the list
+        val ethToken = tokens.find { it.symbol == "ETH" }
+        if (ethToken != null) {
+            Text(
+                text = "Total Balance",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp)
+            )
+            Text(
+                text = ethToken.balance, // Get balance from the ETH token
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
+            )
+        } else {
+            //  Show a loading or error state if ETH token is not yet loaded
+            Text(
+                text = "Total Balance: Loading...",
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
+            )
+        }
+
+
+        //  Removed explicit DAI display as it will be part of the LazyColumn below
 
         Row(
             modifier = Modifier
@@ -104,6 +105,7 @@ fun HomeScreen(
             modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
         )
 
+        //  Display all tokens using LazyColumn and TokenItem
         LazyColumn {
             items(tokens) { token ->
                 TokenItem(token = token)

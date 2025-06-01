@@ -16,12 +16,15 @@ import org.web3j.abi.TypeReference
 import org.web3j.abi.datatypes.Address
 import org.web3j.abi.datatypes.Function
 import org.web3j.abi.datatypes.Type
+import org.web3j.abi.datatypes.Utf8String
 import org.web3j.abi.datatypes.generated.Uint256
+import org.web3j.abi.datatypes.generated.Uint8
 import java.util.Arrays
 
 class WalletRepositoryImpl : WalletRepository {
 
-    private val nodeUrl = "https://dawn-newest-morning.ethereum-sepolia.quiknode.pro/704573517106871d7fba269128fcdce8acd1e0a2/"
+    private val nodeUrl =
+        "https://dawn-newest-morning.ethereum-sepolia.quiknode.pro/704573517106871d7fba269128fcdce8acd1e0a2/"
     private val web3j: Web3j by lazy {
         Web3j.build(HttpService(nodeUrl))
     }
@@ -52,7 +55,10 @@ class WalletRepositoryImpl : WalletRepository {
             try {
                 val credentials = Credentials.create(privateKey)
 
-                val nonce = web3j.ethGetTransactionCount(credentials.address, DefaultBlockParameterName.LATEST).send().transactionCount
+                val nonce = web3j.ethGetTransactionCount(
+                    credentials.address,
+                    DefaultBlockParameterName.LATEST
+                ).send().transactionCount
 
                 // 1.  Gas Price ( Legacy Transaction)
                 val gasPriceResult = web3j.ethGasPrice().send()
@@ -77,7 +83,8 @@ class WalletRepositoryImpl : WalletRepository {
 
                 // 4. Chain ID (EIP-155 compatible for Legacy)
                 //   signMessage  Chain ID
-                val signedMessage = TransactionEncoder.signMessage(rawTransaction, chainId, credentials)
+                val signedMessage =
+                    TransactionEncoder.signMessage(rawTransaction, chainId, credentials)
 
                 // 5. Hex String
                 val hexValue = Numeric.toHexString(signedMessage)
@@ -96,10 +103,14 @@ class WalletRepositoryImpl : WalletRepository {
             } catch (e: Exception) {
                 throw Exception("Failed to send ETH: ${e.localizedMessage}", e)
             }
-        }}
+        }
+    }
 
     //  ERC-20 ---
-    override suspend fun getErc20TokenBalance(tokenContractAddress: String, walletAddress: String): BigInteger {
+    override suspend fun getErc20TokenBalance(
+        tokenContractAddress: String,
+        walletAddress: String
+    ): BigInteger {
         return withContext(Dispatchers.IO) {
             try {
                 val function = Function(
@@ -138,5 +149,81 @@ class WalletRepositoryImpl : WalletRepository {
                 throw Exception("Failed to get ERC-20 token balance: ${e.localizedMessage}", e)
             }
         }
+    }
+
+    override suspend fun getErc20TokenDecimals(tokenContractAddress: String): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+                val function = Function(
+                    "decimals",
+                    emptyList(), // No input parameters
+                    listOf(object : TypeReference<Uint8>() {}) // Output is Uint8
+                )
+                val encodedFunction = FunctionEncoder.encode(function)
+                val ethCall = web3j.ethCall(
+                    org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
+                        null,
+                        tokenContractAddress,
+                        encodedFunction
+                    ),
+                    DefaultBlockParameterName.LATEST
+                ).send()
+
+                if (ethCall.hasError()) {
+                    throw Exception("Failed to get ERC-20 decimals: ${ethCall.error.message}")
+                }
+
+                val results = FunctionReturnDecoder.decode(
+                    ethCall.value,
+                    function.outputParameters
+                )
+
+                if (results.isNotEmpty() && results[0] is Uint8) {
+                    return@withContext (results[0] as Uint8).value.toInt()
+                } else {
+                    throw Exception("Could not decode ERC-20 decimals from contract call.")
+                }
+            } catch (e: Exception) {
+                throw Exception("Failed to get ERC-20 token decimals: ${e.localizedMessage}", e)
+            }
         }
+    }
+
+    override suspend fun getErc20TokenSymbol(tokenContractAddress: String): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val function = Function(
+                    "symbol",
+                    emptyList(), // No input parameters
+                    listOf(object : TypeReference<Utf8String>() {}) // Output is string
+                )
+                val encodedFunction = FunctionEncoder.encode(function)
+                val ethCall = web3j.ethCall(
+                    org.web3j.protocol.core.methods.request.Transaction.createEthCallTransaction(
+                        null,
+                        tokenContractAddress,
+                        encodedFunction
+                    ),
+                    DefaultBlockParameterName.LATEST
+                ).send()
+
+                if (ethCall.hasError()) {
+                    throw Exception("Failed to get ERC-20 symbol: ${ethCall.error.message}")
+                }
+
+                val results = FunctionReturnDecoder.decode(
+                    ethCall.value,
+                    function.outputParameters
+                )
+
+                if (results.isNotEmpty() && results[0] is Utf8String) {
+                    return@withContext (results[0] as Utf8String).value
+                } else {
+                    throw Exception("Could not decode ERC-20 symbol from contract call.")
+                }
+            } catch (e: Exception) {
+                throw Exception("Failed to get ERC-20 token symbol: ${e.localizedMessage}", e)
+            }
+        }
+    }
 }

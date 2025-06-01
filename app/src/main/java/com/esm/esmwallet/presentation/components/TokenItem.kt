@@ -31,12 +31,15 @@ fun TokenItem(token: Token, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {token.iconResId?.let {
             Icon(
-                painter = painterResource(id = token.iconResId),
+                painter = painterResource(id = it),
                 contentDescription = token.name,
                 modifier = Modifier.size(40.dp)
             )
+        } ?: run {
+            Spacer(modifier = Modifier.size(40.dp))
+        }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(text = token.name, style = MaterialTheme.typography.titleMedium)
@@ -52,6 +55,13 @@ fun TokenItem(token: Token, modifier: Modifier = Modifier) {
 @Composable
 fun PreviewTokenItem() {
     MaterialTheme {
-        TokenItem(token = Token("Ethereum", "ETH", "1.2345 ETH", R.drawable.eth))
+        TokenItem(token = Token(
+            name = "Ethereum",
+            symbol = "ETH",
+            contractAddress = "", // ETH doesn't have a contract address
+            decimals = 18, // ETH has 18 decimals
+            balance = "1.2345 ETH",
+            iconResId = R.drawable.eth
+        ))
     }
 }

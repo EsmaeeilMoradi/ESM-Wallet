@@ -35,7 +35,13 @@ fun SendScreen(
     var recipientAddress by remember { mutableStateOf("") }
     var amountToSend by remember { mutableStateOf("") }
 
-    val ethBalance by walletViewModel.ethBalance.collectAsState()
+    //  Now we collect the list of tokens
+    val tokens by walletViewModel.tokens.collectAsState()
+
+    //  Find the ETH token from the list
+    val ethToken = tokens.find { it.symbol == "ETH" }
+    val currentEthBalance = ethToken?.balance ?: "Loading..." // Default to "Loading..." or "N/A"
+
     val sendStatus by walletViewModel.sendStatus.collectAsState()
 
     Column(
@@ -51,7 +57,7 @@ fun SendScreen(
         )
 
         Text(
-            text = "Your current balance: $ethBalance",
+            text = "Your current balance: $currentEthBalance",
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -79,7 +85,8 @@ fun SendScreen(
             trailingIcon = {
                 Button(
                     onClick = {
-                        val balanceNumeric = ethBalance.replace(" ETH", "").toBigDecimalOrNull()
+                        // Use currentEthBalance for Max button logic
+                        val balanceNumeric = currentEthBalance.replace(" ETH", "").toBigDecimalOrNull()
                         if (balanceNumeric != null && balanceNumeric > BigDecimal.ZERO) {
                             amountToSend = balanceNumeric.stripTrailingZeros().toPlainString()
                         }
