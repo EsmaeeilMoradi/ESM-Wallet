@@ -1,6 +1,8 @@
 package com.esm.esmwallet.presentation.send
 
-import android.util.Log
+import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,17 +12,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,194 +32,198 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.esm.esmwallet.R
+import com.esm.esmwallet.data.model.Token
 import com.esm.esmwallet.presentation.viewmodel.WalletViewModel
-import java.math.BigDecimal
+import com.esm.esmwallet.ui.theme.ESMWalletTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SendScreen(
-    modifier: Modifier = Modifier,
+    navController: NavController,
     paddingValues: PaddingValues,
     walletViewModel: WalletViewModel = viewModel()
 ) {
-    var recipientAddress by remember { mutableStateOf("") }
-    var amountToSend by remember { mutableStateOf("") }
-
-    val tokens by walletViewModel.tokens.collectAsState()
-    val selectedToken by walletViewModel.selectedToken.collectAsState() // Collect the selected token
+    val context = LocalContext.current
+    val selectedToken by walletViewModel.selectedToken.collectAsState()
     val sendStatus by walletViewModel.sendStatus.collectAsState()
+    var toAddress by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
 
-    var expanded by remember { mutableStateOf(false) } // For dropdown menu
+    LaunchedEffect(sendStatus) {
+        sendStatus?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            if (it.contains("Transaction sent!")) {
+                toAddress = ""
+                amount = ""
+                walletViewModel.setSendStatus(null)
+            }
+        }
+    }
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .padding(16.dp)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
     ) {
-        Text(
-            text = "Send Tokens",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Token Selection Dropdown
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded },
-            modifier = Modifier.fillMaxWidth()
+        Text(
+            text = "Select Token",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.align(Alignment.Start)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    navController.navigate("token_selection_screen")
+                }
         ) {
-            OutlinedTextField(
-                value = selectedToken?.symbol ?: "Select Token", // Display selected token symbol
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Token") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor() // Crucial for dropdown anchor
-            )
-
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                tokens.forEach { token ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                token.iconResId?.let {
-                                    Icon(
-                                        painter = painterResource(id = it),
-                                        contentDescription = token.name,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                                Text(token.name)
-                            }
-                        },
-                        onClick = {
-                            walletViewModel.setSelectedToken(token) // Update selected token in ViewModel
-                            expanded = false
-                            amountToSend = "" // Clear amount when token changes
+                selectedToken?.let { token ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        token.iconResId?.let {
+                            Icon(
+                                painter = painterResource(id = it),
+                                contentDescription = token.name,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        } ?: run {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_token_placeholder),
+                                contentDescription = "Token",
+                                modifier = Modifier.size(32.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    )
-                }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(text = token.name, style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                text = token.symbol,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Text(text = token.balance, style = MaterialTheme.typography.bodyLarge)
+                } ?: Text(text = "No token selected", style = MaterialTheme.typography.bodyLarge)
+                Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Token")
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
 
-
-        // Display current balance of the selected token
-        selectedToken?.let { token ->
-            Text(
-                text = "Your current balance: ${token.balance}",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        } ?: run {
-            Text(
-                text = "Your current balance: Loading...",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-        }
+        Spacer(modifier = Modifier.height(24.dp))
 
         OutlinedTextField(
-            value = recipientAddress,
-            onValueChange = { recipientAddress = it },
+            value = toAddress,
+            onValueChange = { toAddress = it },
             label = { Text("Recipient Address") },
-            placeholder = { Text("0x...") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
         )
+
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = amountToSend,
-            onValueChange = { newValue ->
-                // Allow only numeric input with optional decimal point
-                if (newValue.matches(Regex("^\\d*\\.?\\d*\$"))) {
-                    amountToSend = newValue
+            value = amount,
+            onValueChange = {
+                // فقط اعداد و یک نقطه اعشار
+                if (it.matches(Regex("^\\d*\\.?\\d*\$"))) {
+                    amount = it
                 }
             },
-            label = { Text("Amount (${selectedToken?.symbol ?: ""})") }, // Dynamic label
+            label = { Text("Amount") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            trailingIcon = {
-                Button(
-                    onClick = {
-                        selectedToken?.let { token ->
-                            val balanceWithoutSymbol =
-                                token.balance.replace(token.symbol, "").trim()
-                            val balanceNumeric = balanceWithoutSymbol.toBigDecimalOrNull()
-                            if (balanceNumeric != null && balanceNumeric > BigDecimal.ZERO) {
-                                // For ERC-20, use its decimals for stripTrailingZeros
-                                amountToSend = balanceNumeric.stripTrailingZeros().toPlainString()
-                            }
-                        }
-                    },
-                    modifier = Modifier.padding(end = 8.dp),
-                    // Disable Max button if no token is selected or balance is not valid
-                    enabled = selectedToken != null &&
-                            selectedToken?.balance?.replace(selectedToken?.symbol ?: "", "")?.trim()
-                                ?.toBigDecimalOrNull() != null &&
-                            selectedToken?.balance?.replace(selectedToken?.symbol ?: "", "")?.trim()
-                                ?.toBigDecimalOrNull()!! > BigDecimal.ZERO
-                ) {
-                    Text("Max")
-                }
-            }
+            singleLine = true
         )
-        Spacer(modifier = Modifier.height(32.dp))
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
-                selectedToken?.let { token ->
-                    if (token.symbol == "ETH") {
-                        walletViewModel.sendEth(recipientAddress, amountToSend)
-                    } else {
-                        // For ERC-20 tokens
-                        if (token.contractAddress.isNotBlank()) {
-                            walletViewModel.sendErc20Token(
-                                token.contractAddress,
-                                recipientAddress,
-                                amountToSend,
-                                token.decimals // Pass decimals for conversion
-                            )
-                        } else {
-                            Log.e("SendScreen", "Error: ERC-20 token has no contract address.")
-                            walletViewModel.setSendStatus("Error: Token contract address missing.")
-                        }
-                    }
-                } ?: run {
-                    Log.e("SendScreen", "Error: No token selected to send.")
-                    walletViewModel.setSendStatus("Error: No token selected.")
+                if (selectedToken == null) {
+                    Toast.makeText(context, "Please select a token first", Toast.LENGTH_SHORT)
+                        .show()
+                    return@Button
                 }
-                Log.d(
-                    "SendScreen",
-                    "Send Button Clicked - Token: ${selectedToken?.symbol ?: "None"}, Recipient: $recipientAddress, Amount: $amountToSend"
-                )
+                if (toAddress.isBlank() || amount.isBlank()) {
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    return@Button
+                }
+
+                if (selectedToken?.symbol == "ETH") {
+                    walletViewModel.sendEth(toAddress, amount)
+                } else if (selectedToken?.contractAddress != null) {
+                    // برای ERC-20
+                    selectedToken?.let { token ->
+                        walletViewModel.sendErc20Token(
+                            tokenContractAddress = token.contractAddress,
+                            toAddress = toAddress,
+                            amountDisplayValue = amount,
+                            decimals = token.decimals
+                        )
+                    }
+                } else {
+                    Toast.makeText(context, "Unsupported token for sending", Toast.LENGTH_SHORT)
+                        .show()
+                }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = recipientAddress.isNotBlank() && amountToSend.isNotBlank() && amountToSend.toBigDecimalOrNull() != null && selectedToken != null
+            enabled = selectedToken != null && toAddress.isNotBlank() && amount.isNotBlank()
         ) {
             Text("Send")
         }
+    }
+}
 
-        sendStatus?.let { status ->
-            Text(
-                text = status,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (status.startsWith("Error")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 16.dp)
-            )
+@Preview(showBackground = true)
+@Composable
+fun PreviewSendScreen() {
+    ESMWalletTheme {
+        val mockNavController = rememberNavController()
+        val mockWalletViewModel = object : WalletViewModel() {
+            override val selectedToken: StateFlow<Token?> = MutableStateFlow(
+                Token(
+                    name = "Ethereum",
+                    symbol = "ETH",
+                    balance = "1.234 ETH",
+                    contractAddress = "",
+                    iconResId = R.drawable.eth,
+                    decimals = 18
+                )
+            ).asStateFlow()
+
+            override val sendStatus: StateFlow<String?> = MutableStateFlow(null).asStateFlow()
+
         }
+        SendScreen(
+            navController = mockNavController,
+            paddingValues = PaddingValues(0.dp),
+            walletViewModel = mockWalletViewModel
+        )
     }
 }

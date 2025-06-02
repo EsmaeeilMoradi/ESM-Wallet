@@ -18,7 +18,7 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 
-class WalletViewModel : ViewModel() {
+open class WalletViewModel : ViewModel() {
 
     private val testPrivateKey = "50865d1f1dc2de719049c411a96f1d1be1e42d5af345ff6ec29fd6e53b801e10"
     val testWalletAddress = "0x2c6497d4492cdBAbB38D226353d5C656d4D71eB8"
@@ -36,15 +36,14 @@ class WalletViewModel : ViewModel() {
     private val mttName = "My Test Token"
 
 
-
     private val _tokens = MutableStateFlow<List<Token>>(emptyList())
-    val tokens: StateFlow<List<Token>> = _tokens.asStateFlow()
+    open val tokens: StateFlow<List<Token>> = _tokens.asStateFlow()
 
     private val _selectedToken = MutableStateFlow<Token?>(null)
-    val selectedToken: StateFlow<Token?> = _selectedToken.asStateFlow()
+    open val selectedToken: StateFlow<Token?> = _selectedToken.asStateFlow()
 
     private val _sendStatus = MutableStateFlow<String?>(null)
-    val sendStatus: StateFlow<String?> = _sendStatus.asStateFlow()
+    open val sendStatus: StateFlow<String?> = _sendStatus.asStateFlow()
 
     fun setSendStatus(status: String?) {
         _sendStatus.value = status
@@ -55,6 +54,7 @@ class WalletViewModel : ViewModel() {
         generateAndLogMnemonic()
 
     }
+
     private fun generateAndLogMnemonic() {
         viewModelScope.launch {
             try {
@@ -65,23 +65,6 @@ class WalletViewModel : ViewModel() {
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     private fun loadInitialTokens() {
@@ -106,7 +89,7 @@ class WalletViewModel : ViewModel() {
                 val mttBalanceFormatted = BigDecimal(mttBalanceWei)
                     .divide(
                         BigDecimal(10).pow(mttDecimals),
-                        mttDecimals, // از دسیمال واقعی توکن استفاده شود
+                        mttDecimals,
                         RoundingMode.HALF_UP
                     )
                     .toPlainString()
@@ -166,7 +149,7 @@ class WalletViewModel : ViewModel() {
                         contractAddress = mttContractAddress,
                         decimals = mttDecimals,
                         balance = "$mttBalanceFormatted $mttSymbol",
-                        iconResId = R.drawable.ic_launcher_foreground // آیکون دلخواه برای MTT
+                        iconResId = R.drawable.ic_launcher_foreground
                     )
                 )
 //                    Token(
@@ -234,7 +217,7 @@ class WalletViewModel : ViewModel() {
         }
     }
 
-    fun setSelectedToken(token: Token) {
+    open fun setSelectedToken(token: Token) {
         _selectedToken.value = token
         Log.d("WalletViewModel", "Selected token set to: ${token.symbol}")
     }
