@@ -38,7 +38,19 @@ android {
         compose = true
     }
 }
-
+// Keep this block for explicit version forcing, even if you exclude one.
+// This ensures that if another library accidentally pulls in a conflicting version,
+// Gradle knows which one to prioritize.
+configurations.all {
+    resolutionStrategy {
+        // Force the specific bcprov version you want to use (e.g., 1.69)
+        // This will ensure that only the "jdk15to18" version is used if it's the one we want to keep.
+        // It's generally better to let Gradle resolve dependencies naturally,
+        // but for deep conflicts like this, forcing helps.
+        force("org.bouncycastle:bcprov-jdk15to18:1.69")
+        force("org.bouncycastle:bcpkix-jdk15to18:1.69") // Make sure to force bcpkix-jdk15to18 as well if it causes issues
+    }
+}
 dependencies {
     // Import the Compose BOM
     implementation(platform(libs.androidx.compose.bom))
@@ -66,6 +78,22 @@ dependencies {
     implementation(libs.zxing.android.embedded)
     // Core ZXing library
     implementation(libs.core.zxing)
+    // BitcoinJ with more specific exclusions for Bouncy Castle
+    implementation(libs.bitcoinj.core) {
+        // Exclude problematic transitive dependencies
+        exclude(group = "org.scrypt")
+        exclude(group = "org.slf4j", module = "slf4j-api")
+        exclude(group = "org.checkerframework")
+
+        // Exclude ALL bouncycastle related modules that might conflict.
+        // The error shows 'bcprov-jdk15on' and 'bcprov-jdk15to18' conflicting.
+        // We'll exclude the 'jdk15on' version as it's often the older/less compatible one for modern Android.
+        // We'll also exclude bcpkix (related to bouncycastle) to be safe.
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15on")
+        exclude(group = "org.bouncycastle", module = "bcpkix-jdk15on") // Exclude the corresponding bcpkix as well
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18") // Exclude this as well from bitcoinj if web3j provides it
+        exclude(group = "org.bouncycastle", module = "bcpkix-jdk15to18") // Exclude this as well from bitcoinj if web3j provides it
+    }
 
     // Debugging and Testing Compose
     debugImplementation(libs.androidx.ui.tooling)

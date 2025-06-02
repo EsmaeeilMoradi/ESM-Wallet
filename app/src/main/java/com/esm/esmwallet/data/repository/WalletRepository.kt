@@ -28,4 +28,7 @@ interface WalletRepository {
         toAddress: String,
         amount: BigInteger // Amount in token's smallest unit (e.g., Wei for ETH, but for DAI it's based on its decimals)
     ): String // Transaction Hash
+
+    // Generates a 12-word mnemonic phrase
+    fun generateMnemonicPhrase(): String
 }

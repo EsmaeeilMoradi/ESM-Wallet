@@ -52,7 +52,37 @@ class WalletViewModel : ViewModel() {
 
     init {
         loadInitialTokens()
+        generateAndLogMnemonic()
+
     }
+    private fun generateAndLogMnemonic() {
+        viewModelScope.launch {
+            try {
+                val mnemonic = walletRepository.generateMnemonicPhrase()
+                Log.d("MnemonicGen", "Generated Mnemonic: $mnemonic")
+            } catch (e: Exception) {
+                Log.e("MnemonicGen", "Error generating mnemonic", e)
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private fun loadInitialTokens() {
         viewModelScope.launch {

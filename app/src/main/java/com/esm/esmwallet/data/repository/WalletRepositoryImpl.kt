@@ -3,6 +3,8 @@ package com.esm.esmwallet.data.repository
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.bitcoinj.crypto.MnemonicCode
+import org.bitcoinj.crypto.MnemonicException
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.RawTransaction
 import org.web3j.crypto.TransactionEncoder
@@ -20,6 +22,7 @@ import org.web3j.abi.datatypes.Type
 import org.web3j.abi.datatypes.Utf8String
 import org.web3j.abi.datatypes.generated.Uint256
 import org.web3j.abi.datatypes.generated.Uint8
+import java.security.SecureRandom
 import java.util.Arrays
 
 class WalletRepositoryImpl : WalletRepository {
@@ -338,6 +341,19 @@ class WalletRepositoryImpl : WalletRepository {
             } catch (e: Exception) {
                 throw Exception("Failed to send ERC-20 token: ${e.localizedMessage}", e)
             }
+        }
+    }
+
+    override fun generateMnemonicPhrase(): String {
+        val initialEntropy = ByteArray(16) // 128 bits for 12 words
+        SecureRandom().nextBytes(initialEntropy)
+        return try {
+            // MnemonicCode uses the English wordlist by default
+            val wordList = MnemonicCode.INSTANCE.toMnemonic(initialEntropy)
+            wordList.joinToString(" ")
+        } catch (e: MnemonicException) {
+            // Handle exception if entropy is not valid
+            throw RuntimeException("Error generating mnemonic phrase", e)
         }
     }
 }
