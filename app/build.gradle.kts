@@ -1,9 +1,22 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
+fun getLocalProperty(propertyName: String): String {
+    val properties = Properties()
+    val localPropertiesFile = File(project.rootProject.rootDir, "local.properties")
+    if (localPropertiesFile.exists()) {
+        FileInputStream(localPropertiesFile).use { input ->
+            properties.load(input)
+        }
+    }
+    return properties.getProperty(propertyName) ?: ""
+}
 android {
     namespace = "com.esm.esmwallet"
     compileSdk = 35
@@ -16,8 +29,17 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
 
+        val etherscanApiKey: String = getLocalProperty("ETHERSCAN_API_KEY")
+        val alchemyNodeUrl: String = getLocalProperty("ALCHEMY_NODE_URL")
+
+        buildConfigField("String", "ETHERSCAN_API_KEY", "\"$etherscanApiKey\"")
+        buildConfigField("String", "ALCHEMY_NODE_URL", "\"$alchemyNodeUrl\"")
+
+    }
+    buildFeatures {
+        buildConfig = true
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -25,6 +47,16 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        debug {
+            /*
+            val etherscanApiKey: String = getLocalProperty("ETHERSCAN_API_KEY")
+            val alchemyNodeUrl: String = getLocalProperty("ALCHEMY_NODE_URL")
+
+            buildConfigField("String", "ETHERSCAN_API_KEY", "\"$etherscanApiKey\"")
+            buildConfigField("String", "ALCHEMY_NODE_URL", "\"$alchemyNodeUrl\"")
+
+             */
         }
     }
     compileOptions {
@@ -36,6 +68,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 // Keep this block for explicit version forcing, even if you exclude one.
@@ -94,6 +127,9 @@ dependencies {
         exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18") // Exclude this as well from bitcoinj if web3j provides it
         exclude(group = "org.bouncycastle", module = "bcpkix-jdk15to18") // Exclude this as well from bitcoinj if web3j provides it
     }
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
 
     // Debugging and Testing Compose
     debugImplementation(libs.androidx.ui.tooling)

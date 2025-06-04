@@ -17,6 +17,9 @@ web3j = "5.0.0"
 zxingAndroidEmbedded = "4.3.0"
 core-zxing = "3.5.3"
 bitcoinjCore = "0.16.1"
+retrofit = "3.0.0"
+converterGson = "3.0.0"
+loggingInterceptor = "4.12.0"
 
 # Dagger Hilt
 # hilt = "2.51.1"
@@ -46,6 +49,9 @@ web3j-core = { group = "org.web3j", name = "core", version.ref = "web3j" }
 zxing-android-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
 core-zxing = { group = "com.google.zxing", name = "core", version.ref = "core-zxing" }
 bitcoinj-core = { group = "org.bitcoinj", name = "bitcoinj-core", version.ref = "bitcoinjCore" }
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "converterGson" }
+logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "loggingInterceptor" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

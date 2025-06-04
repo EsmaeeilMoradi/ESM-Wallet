@@ -1,6 +1,8 @@
 package com.esm.esmwallet.data.repository
 
 import android.util.Log
+import com.esm.esmwallet.data.model.Transaction
+import com.esm.esmwallet.util.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.bitcoinj.crypto.MnemonicCode
@@ -24,15 +26,23 @@ import org.web3j.abi.datatypes.generated.Uint256
 import org.web3j.abi.datatypes.generated.Uint8
 import java.security.SecureRandom
 import java.util.Arrays
+import com.esm.esmwallet.data.remote.EtherscanApi
+import com.esm.esmwallet.data.remote.RetrofitInstance
+import com.esm.esmwallet.data.remote.response.TransactionObject
+import com.esm.esmwallet.BuildConfig
+
 
 class WalletRepositoryImpl : WalletRepository {
 
-    private val nodeUrl ="https://eth-sepolia.g.alchemy.com/v2/A3yCGdMaP7z1P3UoUyiP5YfAshA6jBii"
+    private val nodeUrl =  BuildConfig.ALCHEMY_NODE_URL
+    private val hardcodedApiKey = BuildConfig.ETHERSCAN_API_KEY
+    private val etherscanApi: EtherscanApi = RetrofitInstance.api
+
     private val web3j: Web3j by lazy {
         Web3j.build(HttpService(nodeUrl))
     }
 
-    private val chainId: Long = 11155111L //   Sepolia Testnet
+    private val chainId: Long = 11155111L
 
     override suspend fun getEthBalance(walletAddress: String): BigInteger {
         return withContext(Dispatchers.IO) {
@@ -45,7 +55,10 @@ class WalletRepositoryImpl : WalletRepository {
                 // *** Alchemy/Web3j ***
                 Log.d("ETH_DEBUG", "----------------------------------------------------")
                 Log.d("ETH_DEBUG", "Calling ethGetBalance for address: $walletAddress")
-                Log.d("ETH_DEBUG", "EthGetBalance raw response JSON: ${ethGetBalance.jsonrpc}") // Shows jsonrpc version
+                Log.d(
+                    "ETH_DEBUG",
+                    "EthGetBalance raw response JSON: ${ethGetBalance.jsonrpc}"
+                ) // Shows jsonrpc version
                 Log.d("ETH_DEBUG", "EthGetBalance ID: ${ethGetBalance.id}")
                 Log.d("ETH_DEBUG", "EthGetBalance result (hex value): ${ethGetBalance.result}")
                 Log.d("ETH_DEBUG", "EthGetBalance hasError: ${ethGetBalance.hasError()}")
@@ -57,7 +70,10 @@ class WalletRepositoryImpl : WalletRepository {
                     throw Exception("Failed to get ETH balance: $errorMessage")
                 }
                 if (ethGetBalance.result.isNullOrEmpty()) {
-                    Log.e("ETH_DEBUG", "EthGetBalance result is null or empty, but no explicit error.")
+                    Log.e(
+                        "ETH_DEBUG",
+                        "EthGetBalance result is null or empty, but no explicit error."
+                    )
                     throw Exception("Failed to get ETH balance: Empty result from API")
                 }
 
@@ -88,19 +104,12 @@ class WalletRepositoryImpl : WalletRepository {
                     DefaultBlockParameterName.LATEST
                 ).send().transactionCount
 
-                // 1.  Gas Price ( Legacy Transaction)
                 val gasPriceResult = web3j.ethGasPrice().send()
                 if (gasPriceResult.hasError()) {
                     throw Exception("Failed to get gas price: ${gasPriceResult.error.message}")
                 }
                 val gasPrice = gasPriceResult.gasPrice
-
-                // 2.  Gas Limit ( Legacy Transaction)
-                val gasLimit = BigInteger.valueOf(21000) // Default for simple ETH transfers
-
-
-                // 3.  RawTransaction Legacy
-                // ا createEtherTransaction  Legacy Transactio
+                val gasLimit = BigInteger.valueOf(21000)
                 val rawTransaction = RawTransaction.createEtherTransaction(
                     nonce,
                     gasPrice,
@@ -108,25 +117,15 @@ class WalletRepositoryImpl : WalletRepository {
                     toAddress,
                     amountWei
                 )
-
-                // 4. Chain ID (EIP-155 compatible for Legacy)
-                //   signMessage  Chain ID
                 val signedMessage =
                     TransactionEncoder.signMessage(rawTransaction, chainId, credentials)
-
-                // 5. Hex String
                 val hexValue = Numeric.toHexString(signedMessage)
-
-                // 6. (Signed Transaction)
                 val ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send()
 
-                // 7.
                 if (ethSendTransaction.hasError()) {
                     val error = ethSendTransaction.error
                     throw Exception("Transaction error: ${error?.message ?: "Unknown error"}")
                 }
-
-                // 8.
                 ethSendTransaction.transactionHash
             } catch (e: Exception) {
                 throw Exception("Failed to send ETH: ${e.localizedMessage}", e)
@@ -134,7 +133,6 @@ class WalletRepositoryImpl : WalletRepository {
         }
     }
 
-    //  ERC-20 ---
     override suspend fun getErc20TokenBalance(
         tokenContractAddress: String,
         walletAddress: String
@@ -185,8 +183,8 @@ class WalletRepositoryImpl : WalletRepository {
             try {
                 val function = Function(
                     "decimals",
-                    emptyList(), // No input parameters
-                    listOf(object : TypeReference<Uint8>() {}) // Output is Uint8
+                    emptyList(),
+                    listOf(object : TypeReference<Uint8>() {})
                 )
                 val encodedFunction = FunctionEncoder.encode(function)
                 val ethCall = web3j.ethCall(
@@ -223,7 +221,7 @@ class WalletRepositoryImpl : WalletRepository {
             try {
                 val function = Function(
                     "symbol",
-                    emptyList(), // No input parameters
+                    emptyList(),
                     listOf(object : TypeReference<Utf8String>() {}) // Output is string
                 )
                 val encodedFunction = FunctionEncoder.encode(function)
@@ -256,7 +254,6 @@ class WalletRepositoryImpl : WalletRepository {
         }
     }
 
-    // Implementation for sending ERC-20 tokens
     override suspend fun sendErc20Token(
         privateKey: String,
         tokenContractAddress: String,
@@ -266,25 +263,15 @@ class WalletRepositoryImpl : WalletRepository {
         return withContext(Dispatchers.IO) {
             try {
                 val credentials = Credentials.create(privateKey)
-
-                // 1. Get Nonce
                 val nonce = web3j.ethGetTransactionCount(
                     credentials.address,
                     DefaultBlockParameterName.LATEST
                 ).send().transactionCount
-
-                // 2. Gas Price (EIP-1559 Transaction)
-                // For ERC-20 transactions, it's better to use EIP-1559 style gas estimation if the network supports it.
-                // However, for simplicity and compatibility with your existing ETH send, we'll stick to legacy gas price for now.
-                // In a real app, you would fetch maxFeePerGas and maxPriorityFeePerGas.
                 val gasPriceResult = web3j.ethGasPrice().send()
                 if (gasPriceResult.hasError()) {
                     throw Exception("Failed to get gas price for ERC-20 transaction: ${gasPriceResult.error.message}")
                 }
                 val gasPrice = gasPriceResult.gasPrice
-
-                // 3. Encode the transfer function call for ERC-20
-                // function transfer(address _to, uint256 _value) returns (bool success)
                 val function = Function(
                     "transfer",
                     Arrays.asList<Type<*>>(Address(toAddress), Uint256(amount)),
@@ -292,15 +279,12 @@ class WalletRepositoryImpl : WalletRepository {
                         TypeReference<org.web3j.abi.datatypes.Bool>() {})
                 )
                 val encodedFunction = FunctionEncoder.encode(function)
-
-                // 4. Estimate Gas Limit for ERC-20 transaction
-                // This is crucial for ERC-20 as gas limit is not fixed at 21000
                 val gasLimitResponse = web3j.ethEstimateGas(
                     org.web3j.protocol.core.methods.request.Transaction.createFunctionCallTransaction(
                         credentials.address,
                         nonce,
                         gasPrice,
-                        BigInteger.ZERO, // Value is 0 for ERC-20 transfers
+                        BigInteger.ZERO,
                         tokenContractAddress,
                         encodedFunction
                     )
@@ -309,33 +293,27 @@ class WalletRepositoryImpl : WalletRepository {
                 if (gasLimitResponse.hasError()) {
                     throw Exception("Failed to estimate gas for ERC-20 transaction: ${gasLimitResponse.error.message}")
                 }
-                val gasLimit = gasLimitResponse.amountUsed // Use the estimated gas limit
+                val gasLimit = gasLimitResponse.amountUsed
 
-                // 5. Create the RawTransaction (Legacy style, sending to the token contract)
                 val rawTransaction = RawTransaction.createTransaction(
                     nonce,
                     gasPrice,
                     gasLimit,
-                    tokenContractAddress, // Destination is the token contract itself
-                    BigInteger.ZERO, // Value is 0 ETH for token transfers
-                    encodedFunction // Data field contains the encoded function call
+                    tokenContractAddress,
+                    BigInteger.ZERO,
+                    encodedFunction
                 )
-
-                // 6. Sign the transaction
                 val signedMessage =
                     TransactionEncoder.signMessage(rawTransaction, chainId, credentials)
                 val hexValue = Numeric.toHexString(signedMessage)
 
-                // 7. Send the signed transaction
                 val ethSendTransaction = web3j.ethSendRawTransaction(hexValue).send()
 
-                // 8. Check for errors
                 if (ethSendTransaction.hasError()) {
                     val error = ethSendTransaction.error
                     throw Exception("ERC-20 Transaction error: ${error?.message ?: "Unknown error"}")
                 }
 
-                // 9. Return transaction hash
                 ethSendTransaction.transactionHash
 
             } catch (e: Exception) {
@@ -345,15 +323,136 @@ class WalletRepositoryImpl : WalletRepository {
     }
 
     override fun generateMnemonicPhrase(): String {
-        val initialEntropy = ByteArray(16) // 128 bits for 12 words
+        val initialEntropy = ByteArray(16)
         SecureRandom().nextBytes(initialEntropy)
         return try {
             // MnemonicCode uses the English wordlist by default
             val wordList = MnemonicCode.INSTANCE.toMnemonic(initialEntropy)
             wordList.joinToString(" ")
         } catch (e: MnemonicException) {
-            // Handle exception if entropy is not valid
             throw RuntimeException("Error generating mnemonic phrase", e)
         }
     }
+
+    override suspend fun getEthTransactionHistory(address: String): Resource<List<Transaction>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = etherscanApi.getNormalTransactions(
+                    address = address,
+                    apiKey = hardcodedApiKey,
+                    chainId = chainId.toString()
+                )
+
+                if (response.status == "1") {
+                    val transactions = response.result.map { it.toTransaction(address) }
+                    Log.d(
+                        "EtherscanHistory",
+                        "Fetched ${transactions.size} ETH transactions for $address"
+                    )
+                    Resource.Success(transactions)
+                } else {
+                    val errorMessage = response.message
+                    Log.e(
+                        "EtherscanHistory",
+                        "Etherscan API Error fetching ETH history: $errorMessage"
+                    )
+                    Resource.Error("Etherscan API Error: $errorMessage")
+                }
+            } catch (e: Exception) {
+                Log.e(
+                    "EtherscanHistory",
+                    "Network Error fetching ETH transaction history: ${e.localizedMessage}",
+                    e
+                )
+                Resource.Error("Failed to fetch ETH transaction history: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    override suspend fun getErc20TransactionHistory(
+        address: String,
+        contractAddress: String?
+    ): Resource<List<Transaction>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = etherscanApi.getErc20TokenTransactions(
+                    address = address,
+                    contractAddress = contractAddress,
+                    apiKey = hardcodedApiKey,
+                    chainId = chainId.toString()
+                )
+
+                if (response.status == "1") {
+                    val transactions = response.result.map { it.toTransaction(address) }
+                    Log.d(
+                        "EtherscanHistory",
+                        "Fetched ${transactions.size} ERC-20 transactions for $address (Contract: $contractAddress)"
+                    )
+                    Resource.Success(transactions)
+                } else {
+                    val errorMessage = response.message
+                    Log.e(
+                        "EtherscanHistory",
+                        "Etherscan API Error fetching ERC-20 history: $errorMessage"
+                    )
+                    Resource.Error("Etherscan API Error: $errorMessage")
+                }
+            } catch (e: Exception) {
+                Log.e(
+                    "EtherscanHistory",
+                    "Network Error fetching ERC-20 transaction history: ${e.localizedMessage}",
+                    e
+                )
+                Resource.Error("Failed to fetch ERC-20 transaction history: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    suspend fun getEthBalanceForTest(walletAddress: String): Result<String> {
+        return try {
+            val response = etherscanApi.getEthBalance(
+                address = walletAddress,
+                apiKey = hardcodedApiKey,
+                chainId = chainId.toString()
+            )
+
+            if (response.status == "1") {
+                Log.d("EtherscanTest", "ETH Balance fetched successfully: ${response.result}")
+                Result.success(response.result)
+            } else {
+                Log.e(
+                    "EtherscanTest",
+                    "Etherscan API Error: ${response.message} - ${response.result}"
+                )
+                Result.failure(Exception("Etherscan API Error: ${response.message} - ${response.result}"))
+            }
+        } catch (e: Exception) {
+            Log.e("EtherscanTest", "Exception during ETH balance fetch: ${e.localizedMessage}")
+            Result.failure(e)
+        }
+    }
+}
+
+fun TransactionObject.toTransaction(myAddress: String): Transaction {
+    return Transaction(
+        hash = this.hash,
+        from = this.from,
+        to = this.to,
+        value = this.value.toBigIntegerOrNull() ?: BigInteger.ZERO,
+        gasPrice = this.gasPrice.toBigIntegerOrNull() ?: BigInteger.ZERO,
+        gasUsed = this.gasUsed.toBigIntegerOrNull() ?: BigInteger.ZERO,
+        timestamp = this.timeStamp.toLongOrNull() ?: 0L,
+        isError = this.isError == "1",
+        blockNumber = this.blockNumber.toBigIntegerOrNull() ?: BigInteger.ZERO,
+        tokenName = this.tokenName,
+        tokenSymbol = this.tokenSymbol,
+        tokenDecimal = this.tokenDecimal?.toIntOrNull(),
+        type = when {
+            from.equals(myAddress, ignoreCase = true) -> Transaction.TransactionType.SENT
+            to.equals(myAddress, ignoreCase = true) -> Transaction.TransactionType.RECEIVED
+            else -> Transaction.TransactionType.UNKNOWN
+        },
+        isSent = from.equals(myAddress, ignoreCase = true),
+        isReceived = to.equals(myAddress, ignoreCase = true)
+    )
 }

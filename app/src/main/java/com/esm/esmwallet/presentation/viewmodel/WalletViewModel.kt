@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 import org.web3j.utils.Convert
 import java.math.BigDecimal
 import java.math.RoundingMode
+import com.esm.esmwallet.data.model.Transaction
+import com.esm.esmwallet.util.Resource
 
 
 open class WalletViewModel : ViewModel() {
@@ -29,7 +31,6 @@ open class WalletViewModel : ViewModel() {
     private val sendErc20TokenUseCase =
         SendErc20TokenUseCase(walletRepository)
 
-    // **  MTT  **
     private val mttContractAddress = "0xe4CB9f751Fe035B6365d233b780cd8c637D80cBe"
     private val mttDecimals = 18
     private val mttSymbol = "MTT"
@@ -45,6 +46,11 @@ open class WalletViewModel : ViewModel() {
     private val _sendStatus = MutableStateFlow<String?>(null)
     open val sendStatus: StateFlow<String?> = _sendStatus.asStateFlow()
 
+    private val _transactionHistory =
+        MutableStateFlow<Resource<List<Transaction>>>(Resource.Loading())
+    val transactionHistory: StateFlow<Resource<List<Transaction>>> =
+        _transactionHistory.asStateFlow()
+
     fun setSendStatus(status: String?) {
         _sendStatus.value = status
     }
@@ -52,6 +58,22 @@ open class WalletViewModel : ViewModel() {
     init {
         loadInitialTokens()
         generateAndLogMnemonic()
+        viewModelScope.launch {
+            Log.d(
+                "EtherscanTest",
+                "Attempting to fetch ETH balance from Etherscan via getEthBalanceForTest()..."
+            )
+            val result =
+                walletRepository.getEthBalanceForTest(testWalletAddress) // با آدرس ولت تست فراخوانی شود
+            result.onSuccess { balance ->
+                Log.d("EtherscanTest", "SUCCESS! ETH Balance from Etherscan (init): $balance")
+            }.onFailure { error ->
+                Log.e(
+                    "EtherscanTest",
+                    "ERROR! Failed to fetch ETH Balance from Etherscan (init): ${error.message}"
+                )
+            }
+        }
 
     }
 
@@ -81,7 +103,10 @@ open class WalletViewModel : ViewModel() {
                         .toPlainString()
 
 
-                Log.d("WalletViewModel", "Attempting to load initial MTT balance for: $testWalletAddress")
+                Log.d(
+                    "WalletViewModel",
+                    "Attempting to load initial MTT balance for: $testWalletAddress"
+                )
                 val mttBalanceWei = walletRepository.getErc20TokenBalance(
                     mttContractAddress,
                     testWalletAddress
@@ -93,46 +118,6 @@ open class WalletViewModel : ViewModel() {
                         RoundingMode.HALF_UP
                     )
                     .toPlainString()
-
-
-
-//
-//                // --- UPDATED TOKEN CONTRACT ADDRESSES FOR SEPOLIA ---
-//                // **IMPORTANT:** Please verify these addresses on sepolia.etherscan.io
-//                // WETH (Wrapped Ether) contract address on Sepolia
-//                val wethContractAddress = "0x7b799e03F54e19bB4b2d699042646695cB8256F8" // Common WETH Sepolia address
-//                val wethBalanceWei = walletRepository.getErc20TokenBalance(
-//                    wethContractAddress,
-//                    testWalletAddress
-//                )
-//                val wethDecimals = 18 // WETH usually has 18 decimals
-//                val wethSymbol = "WETH"
-//
-//                val wethBalanceFormatted = BigDecimal(wethBalanceWei)
-//                    .divide(
-//                        BigDecimal(10).pow(wethDecimals),
-//                        wethDecimals,
-//                        RoundingMode.HALF_UP
-//                    )
-//                    .toPlainString()
-//
-//                // USDC (or another stablecoin) contract address on Sepolia as a replacement for DAI
-//                val stableCoinContractAddress = "0x1c7D4B196Cb0C7B01d743Fbc6dEe94d93ad97a8c" // Common USDC Sepolia address
-//                val stableCoinBalanceWei =
-//                    walletRepository.getErc20TokenBalance(
-//                        stableCoinContractAddress,
-//                        testWalletAddress
-//                    )
-//                val stableCoinDecimals = 6 // USDC usually has 6 decimals
-//                val stableCoinSymbol = "USDC" // Changing from DAI to USDC
-//
-//                val stableCoinBalanceFormatted = BigDecimal(stableCoinBalanceWei)
-//                    .divide(
-//                        BigDecimal(10).pow(stableCoinDecimals),
-//                        stableCoinDecimals,
-//                        RoundingMode.HALF_UP
-//                    )
-//                    .toPlainString()
 
                 val initialTokens = listOf(
                     Token(
@@ -152,23 +137,6 @@ open class WalletViewModel : ViewModel() {
                         iconResId = R.drawable.ic_launcher_foreground
                     )
                 )
-//                    Token(
-//                        name = "Wrapped Ether",
-//                        symbol = wethSymbol,
-//                        contractAddress = wethContractAddress,
-//                        decimals = wethDecimals,
-//                        balance = "$wethBalanceFormatted $wethSymbol",
-//                        iconResId = R.drawable.wexpoly
-//                    ),
-//                    Token(
-//                        name = stableCoinSymbol, // Changed from DAI to USDC
-//                        symbol = stableCoinSymbol,
-//                        contractAddress = stableCoinContractAddress,
-//                        decimals = stableCoinDecimals,
-//                        balance = "$stableCoinBalanceFormatted $stableCoinSymbol",
-//                        iconResId = R.drawable.usdt // You might want to update this icon if you have a USDC icon
-//                    )
-//                )
                 _tokens.value = initialTokens
                 _selectedToken.value = initialTokens.firstOrNull()
 
@@ -192,21 +160,20 @@ open class WalletViewModel : ViewModel() {
                         decimals = mttDecimals,
                         balance = "Error",
                         iconResId = R.drawable.ic_launcher_foreground
-                    )
-                    ,
+                    ),
                     Token(
                         name = "Wrapped Ether",
                         symbol = "WETH",
-                        contractAddress = "0x7b799e03F54e19bB4b2d699042646695cB8256F8", // Updated WETH address
+                        contractAddress = "0x7b799e03F54e19bB4b2d699042646695cB8256F8",
                         decimals = 18,
                         balance = "Error",
                         iconResId = R.drawable.wexpoly
                     ),
                     Token(
-                        name = "USDC", // Changed from DAI to USDC
-                        symbol = "USDC", // Changed from DAI to USDC
-                        contractAddress = "0x1c7D4B196Cb0C7B01d743Fbc6dEe94d93ad97a8c", // Updated USDC address
-                        decimals = 6, // Updated decimals for USDC
+                        name = "USDC",
+                        symbol = "USDC",
+                        contractAddress = "0x1c7D4B196Cb0C7B01d743Fbc6dEe94d93ad97a8c",
+                        decimals = 6,
                         balance = "Error",
                         iconResId = R.drawable.usdt
                     )
@@ -233,9 +200,11 @@ open class WalletViewModel : ViewModel() {
                             .toPlainString()
                         "$balanceEther ETH"
                     }
+
                     mttSymbol -> {
                         Log.d("WalletViewModel", "Updating MTT balance for: $address")
-                        val balanceWei = walletRepository.getErc20TokenBalance(mttContractAddress, address)
+                        val balanceWei =
+                            walletRepository.getErc20TokenBalance(mttContractAddress, address)
                         val balanceFormatted = BigDecimal(balanceWei)
                             .divide(
                                 BigDecimal(10).pow(mttDecimals),
@@ -243,40 +212,13 @@ open class WalletViewModel : ViewModel() {
                                 RoundingMode.HALF_UP
                             )
                             .toPlainString()
-                        Log.d("WalletViewModel", "Updated MTT balance: $balanceFormatted $mttSymbol")
+                        Log.d(
+                            "WalletViewModel",
+                            "Updated MTT balance: $balanceFormatted $mttSymbol"
+                        )
                         "$balanceFormatted $mttSymbol"
                     }
 
-
-//                    "USDC" -> { // Changed from DAI to USDC
-//                        val stableCoinContractAddress = "0x1c7D4B196Cb0C7B01d743Fbc6dEe94d93ad97a8c" // Updated USDC address
-//                        val stableCoinBalanceWei =
-//                            walletRepository.getErc20TokenBalance(stableCoinContractAddress, address)
-//                        val stableCoinDecimals = 6 // Updated decimals for USDC
-//                        val stableCoinBalanceFormatted = BigDecimal(stableCoinBalanceWei)
-//                            .divide(
-//                                BigDecimal(10).pow(stableCoinDecimals),
-//                                stableCoinDecimals,
-//                                RoundingMode.HALF_UP
-//                            )
-//                            .toPlainString()
-//
-//                        "$stableCoinBalanceFormatted USDC" // Changed symbol
-//                    }
-//                    "WETH" -> {
-//                        val wethContractAddress = "0x7b799e03F54e19bB4b2d699042646695cB8256F8" // Updated WETH address
-//                        val wethBalanceWei =
-//                            walletRepository.getErc20TokenBalance(wethContractAddress, address)
-//                        val wethDecimals = 18
-//                        val wethBalanceFormatted = BigDecimal(wethBalanceWei)
-//                            .divide(
-//                                BigDecimal(10).pow(wethDecimals),
-//                                wethDecimals,
-//                                RoundingMode.HALF_UP
-//                            )
-//                            .toPlainString()
-//                        "$wethBalanceFormatted WETH"
-//                    }
                     else -> "Error: Unknown Token"
                 }
 
@@ -361,10 +303,22 @@ open class WalletViewModel : ViewModel() {
         }
     }
 
-//    suspend fun getErc20TokenBalance(
-//        tokenContractAddress: String,
-//        walletAddress: String
-//    ): BigInteger {
-//        return walletRepository.getErc20TokenBalance(tokenContractAddress, walletAddress)
-//    }
+    fun fetchTransactionHistory(address: String) {
+        viewModelScope.launch {
+            _transactionHistory.value = Resource.Loading()
+            val ethHistoryResource = walletRepository.getEthTransactionHistory(address)
+
+            if (ethHistoryResource is Resource.Success) {
+                val combinedHistory = (ethHistoryResource.data
+                    ?: emptyList())
+                val sortedHistory = combinedHistory.sortedByDescending { it.timestamp }
+                _transactionHistory.value = Resource.Success(sortedHistory)
+            } else {
+                _transactionHistory.value = Resource.Error(
+                    (ethHistoryResource as? Resource.Error)?.message
+                        ?: "Unknown error fetching ETH transaction history."
+                )
+            }
+        }
+    }
 }

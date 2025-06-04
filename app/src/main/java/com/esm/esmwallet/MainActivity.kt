@@ -27,6 +27,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.esm.esmwallet.presentation.history.TransactionHistoryScreen
 import com.esm.esmwallet.presentation.home.HomeScreen
 import com.esm.esmwallet.presentation.receive.ReceiveScreen
 import com.esm.esmwallet.presentation.send.SendScreen
@@ -55,6 +56,7 @@ sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: 
     object Swap : BottomNavItem("Swap", Icons.Default.Settings, "swap")
     object Earn : BottomNavItem("Earn", Icons.Default.Settings, "earn")
     object Discover : BottomNavItem("Discover", Icons.Default.Settings, "discover")
+    object History : BottomNavItem("History", Icons.Default.Info, "history_screen")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,7 +70,8 @@ fun MainScreen() {
         BottomNavItem.Trending,
         BottomNavItem.Swap,
         BottomNavItem.Earn,
-        BottomNavItem.Discover
+        BottomNavItem.Discover,
+        BottomNavItem.History
     )
 
     Scaffold(topBar = {
@@ -76,14 +79,14 @@ fun MainScreen() {
             title = { Text("ESM Wallet") })
     }, bottomBar = {
         NavigationBar {
-            val navBackStackEntry = navController.currentBackStackEntryAsState() // <<== تغییر اینجا
-            val currentRoute = navBackStackEntry.value?.destination?.route // <<== تغییر اینجا
+            val navBackStackEntry = navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry.value?.destination?.route
 
             items.forEach { item ->
                 NavigationBarItem(
                     icon = { Icon(item.icon, contentDescription = item.title) },
                     label = { Text(item.title) },
-                    selected = currentRoute == item.route, // <<== این رو تغییر بده
+                    selected = currentRoute == item.route,
                     onClick = {
                         navController.navigate(item.route) {
                             popUpTo(navController.graph.startDestinationId) {
@@ -131,6 +134,12 @@ fun MainScreen() {
             composable("token_selection_screen") { backStackEntry ->
                 TokenSelectionScreen(
                     navController = navController,
+                    paddingValues = innerPadding,
+                    walletViewModel = sharedWalletViewModel
+                )
+            }
+            composable(BottomNavItem.History.route) { // New composable route for History
+                TransactionHistoryScreen(
                     paddingValues = innerPadding,
                     walletViewModel = sharedWalletViewModel
                 )
