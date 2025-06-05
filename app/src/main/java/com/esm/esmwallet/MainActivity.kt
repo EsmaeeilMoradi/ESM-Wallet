@@ -1,6 +1,7 @@
 package com.esm.esmwallet
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +20,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,11 +34,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.esm.esmwallet.data.remote.AlchemyApiService
+import com.esm.esmwallet.data.remote.Web3jClient
+import com.esm.esmwallet.data.repository.Erc20Repository
 import com.esm.esmwallet.presentation.history.TransactionHistoryScreen
 import com.esm.esmwallet.presentation.home.HomeScreen
+import com.esm.esmwallet.presentation.importtoken.ImportTokenScreen
 import com.esm.esmwallet.presentation.receive.ReceiveScreen
 import com.esm.esmwallet.presentation.send.SendScreen
 import com.esm.esmwallet.presentation.token.TokenSelectionScreen
+import com.esm.esmwallet.presentation.viewmodel.Erc20ViewModel
 import com.esm.esmwallet.presentation.viewmodel.WalletViewModel
 import com.esm.esmwallet.ui.theme.ESMWalletTheme
 
@@ -64,7 +76,13 @@ sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: 
 fun MainScreen() {
     val navController = rememberNavController()
     val sharedWalletViewModel: WalletViewModel = viewModel()
-
+    val erc20ViewModel: Erc20ViewModel = viewModel(
+        factory = Erc20ViewModel.Factory(
+            repository = Erc20Repository(
+                alchemyApiService = AlchemyApiService(Web3jClient.buildWeb3j())
+            )
+        )
+    )
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Trending,
@@ -144,6 +162,52 @@ fun MainScreen() {
                     walletViewModel = sharedWalletViewModel
                 )
             }
+            composable("import_token") {
+                val tokenInfoState by erc20ViewModel.tokenInfo.collectAsState()
+                val isLoading by erc20ViewModel.isLoading.collectAsState()
+                val snackbarMessage by erc20ViewModel.snackbarMessage.collectAsState()
+
+                var contractAddressInput by remember { mutableStateOf("") }
+                var tokenNameInput by remember { mutableStateOf("") }
+                var tokenSymbolInput by remember { mutableStateOf("") }
+                var tokenDecimalsInput by remember { mutableStateOf("") }
+
+                LaunchedEffect(tokenInfoState) {
+                    tokenInfoState?.let { info ->
+                        tokenNameInput = info.name
+                        tokenSymbolInput = info.symbol
+                        tokenDecimalsInput = info.decimals.toString()
+                        Log.d("ImportTokenScreen", "Token info updated in UI: $info")
+                    }
+                }
+
+                ImportTokenScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onImportClick = { contractAddress, name, symbol, decimals ->
+                        if (contractAddress.isNotBlank()) {
+                            erc20ViewModel.fetchTokenInfoByAddress(contractAddress)
+                            contractAddressInput = contractAddress
+                        } else {
+                            erc20ViewModel.dismissSnackbar()
+                            erc20ViewModel.snackbarMessage.value .equals("Contract address cannot be empty.")
+                        }
+
+                        Log.d("ImportTokenScreen", "Import clicked: $contractAddress, $name, $symbol, $decimals")
+                    },
+                    isLoading = isLoading,
+                    snackbarMessage = snackbarMessage,
+                    onSnackbarDismiss = { erc20ViewModel.dismissSnackbar() },
+                    contractAddress = contractAddressInput,
+                    tokenName = tokenNameInput,
+                    tokenSymbol = tokenSymbolInput,
+                    tokenDecimals = tokenDecimalsInput,
+                    onContractAddressChange = { contractAddressInput = it },
+                    onTokenNameChange = { tokenNameInput = it },
+                    onTokenSymbolChange = { tokenSymbolInput = it },
+                    onTokenDecimalsChange = { tokenDecimalsInput = it }
+                )
+            }
+
         }
     }
 }

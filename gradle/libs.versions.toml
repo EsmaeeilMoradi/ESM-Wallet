@@ -1,6 +1,6 @@
 [versions]
 agp = "8.9.1"
-kotlin = "2.0.21"
+kotlin = "2.1.20"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -20,6 +20,13 @@ bitcoinjCore = "0.16.1"
 retrofit = "3.0.0"
 converterGson = "3.0.0"
 loggingInterceptor = "4.12.0"
+
+# Room
+androidx-room = "2.7.1"
+kspVersion = "2.1.20-1.0.32"
+abi = "5.0.0"
+utils = "5.0.0"
+parity = "5.0.0"
 
 # Dagger Hilt
 # hilt = "2.51.1"
@@ -53,8 +60,18 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = 
 converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "converterGson" }
 logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "loggingInterceptor" }
 
+# Room
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidx-room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidx-room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "androidx-room" }
+abi = { group = "org.web3j", name = "abi", version.ref = "abi" }
+utils = { group = "org.web3j", name = "utils", version.ref = "utils" }
+parity = { group = "org.web3j", name = "parity", version.ref = "parity" }
+
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlinAndroidKsp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
 

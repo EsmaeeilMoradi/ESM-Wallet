@@ -80,6 +80,9 @@ fun SendScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
+        Button(onClick = { navController.navigate("import_token") }) {
+            Text("Import New Token")
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(

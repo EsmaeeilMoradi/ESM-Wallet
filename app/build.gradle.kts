@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlinAndroidKsp)
 }
 
 fun getLocalProperty(propertyName: String): String {
@@ -32,9 +33,11 @@ android {
 
         val etherscanApiKey: String = getLocalProperty("ETHERSCAN_API_KEY")
         val alchemyNodeUrl: String = getLocalProperty("ALCHEMY_NODE_URL")
+        val alchemyNodeUrlMainnet: String = getLocalProperty("ALCHEMY_NODE_URL_MAINNET")
 
         buildConfigField("String", "ETHERSCAN_API_KEY", "\"$etherscanApiKey\"")
         buildConfigField("String", "ALCHEMY_NODE_URL", "\"$alchemyNodeUrl\"")
+        buildConfigField("String", "ALCHEMY_NODE_URL_MAINNET", "\"$alchemyNodeUrlMainnet\"")
 
     }
     buildFeatures {
@@ -127,9 +130,24 @@ dependencies {
         exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18") // Exclude this as well from bitcoinj if web3j provides it
         exclude(group = "org.bouncycastle", module = "bcpkix-jdk15to18") // Exclude this as well from bitcoinj if web3j provides it
     }
+
+    //Retrofit
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
+
+    // ** ROOM DATABASE **
+    // Room Runtime
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.abi)
+    implementation(libs.utils)
+    implementation(libs.parity)
+    ksp(libs.androidx.room.compiler)
+
+
+
+
 
     // Debugging and Testing Compose
     debugImplementation(libs.androidx.ui.tooling)
