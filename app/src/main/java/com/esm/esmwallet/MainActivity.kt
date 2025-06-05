@@ -2,18 +2,25 @@ package com.esm.esmwallet
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -26,10 +33,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -80,7 +89,7 @@ fun MainScreen() {
     val sharedWalletViewModel: WalletViewModel = viewModel()
 
     // Get context to build database
-    val context = LocalContext.current // <-- Add this import: androidx.compose.ui.platform.LocalContext
+    val context = LocalContext.current
 
     // Initialize AppDatabase and CustomTokenDao
     val appDatabase = remember { AppDatabase.getDatabase(context) }
@@ -132,7 +141,46 @@ fun MainScreen() {
         NavHost(navController, startDestination = BottomNavItem.Home.route) {
 
             composable(BottomNavItem.Home.route) { backStackEntry ->
-                HomeScreen(paddingValues = innerPadding, walletViewModel = sharedWalletViewModel)
+//                HomeScreen(paddingValues = innerPadding, walletViewModel = sharedWalletViewModel)
+                // --- TEMPORARY TEST CODE for Mnemonic generation ---
+                val context = LocalContext.current
+                val mnemonic by sharedWalletViewModel.mnemonicPhrase.collectAsState()
+
+                Column(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "Welcome to ESM Wallet!", style = MaterialTheme.typography.headlineMedium)
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(onClick = {
+                        sharedWalletViewModel.generateNewMnemonic()
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Generate New Mnemonic (for testing)")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    mnemonic?.let {
+                        Text(text = "Your Mnemonic: ${it.joinToString(" ")}")
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = {
+                            // Example of importing, this will be in a separate screen later
+                            sharedWalletViewModel.importWalletFromMnemonic(it)
+                            Toast.makeText(context, "Wallet imported from generated mnemonic!", Toast.LENGTH_SHORT).show()
+                        }) {
+                            Text("Import generated Mnemonic (for testing)")
+                        }
+                    }
+
+                    sharedWalletViewModel.walletAddress.collectAsState().value?.let { address ->
+                        Text(text = "Wallet Address: $address")
+                    }
+
+                }
             }
 
             composable(BottomNavItem.Trending.route) { backStackEntry ->

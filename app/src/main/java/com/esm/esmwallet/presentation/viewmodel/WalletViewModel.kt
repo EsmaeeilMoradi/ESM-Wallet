@@ -17,10 +17,12 @@ import org.web3j.utils.Convert
 import java.math.BigDecimal
 import java.math.RoundingMode
 import com.esm.esmwallet.data.model.Transaction
+import com.esm.esmwallet.data.wallet.WalletManager
 import com.esm.esmwallet.util.Resource
+import org.bitcoinj.crypto.MnemonicException
 
 
-open class WalletViewModel : ViewModel() {
+open class WalletViewModel ( private val walletManager: WalletManager = WalletManager()): ViewModel() {
 
     private val testPrivateKey = "50865d1f1dc2de719049c411a96f1d1be1e42d5af345ff6ec29fd6e53b801e10"
     val testWalletAddress = "0x2c6497d4492cdBAbB38D226353d5C656d4D71eB8"
@@ -54,6 +56,17 @@ open class WalletViewModel : ViewModel() {
     fun setSendStatus(status: String?) {
         _sendStatus.value = status
     }
+    private val _mnemonicPhrase = MutableStateFlow<List<String>?>(null)
+    val mnemonicPhrase: StateFlow<List<String>?> = _mnemonicPhrase
+
+    private val _currentWallet = MutableStateFlow<org.bitcoinj.wallet.Wallet?>(null)
+    val currentWallet: StateFlow<org.bitcoinj.wallet.Wallet?> = _currentWallet
+
+    private val _walletAddress = MutableStateFlow<String?>(null)
+    val walletAddress: StateFlow<String?> = _walletAddress
+
+    private val _walletBalance = MutableStateFlow<String>("0.0 ETH") // Initial balance, can be updated later
+    val walletBalance: StateFlow<String> = _walletBalance // Expose as StateFlow
 
     init {
         loadInitialTokens()
@@ -321,4 +334,84 @@ open class WalletViewModel : ViewModel() {
             }
         }
     }
+
+    /**
+     * Generates a new Mnemonic Phrase and updates the UI state.
+     * @param numWords The desired number of words (12 or 24).
+     */
+    fun generateNewMnemonic(numWords: Int = 12) {
+        viewModelScope.launch {
+            try {
+                val newMnemonic = walletManager.generateMnemonic(numWords)
+                _mnemonicPhrase.value = newMnemonic
+                // Optionally, generate wallet immediately after mnemonic
+                // val wallet = walletManager.restoreWalletFromMnemonic(newMnemonic)
+                // _currentWallet.value = wallet
+                // _walletAddress.value = walletManager.getEthAddressFromPrivateKey(walletManager.getPrivateKeyFromWallet(wallet))
+                println("D/WalletViewModel: Mnemonic generated (${newMnemonic.size} words): ${newMnemonic.joinToString(" ")}")
+                // After generating, you might immediately try to import it for testing,
+                // or let the UI trigger the importWalletFromMnemonic
+            } catch (e: MnemonicException) {
+                println("E/WalletViewModel: Mnemonic generation error: ${e.message}")
+                _mnemonicPhrase.value = null // Clear mnemonic on error
+                // TODO: Update a user-facing error message state here (e.g., for a SnackBar)
+            } catch (e: IllegalArgumentException) {
+                println("E/WalletViewModel: Invalid mnemonic word count requested: ${e.message}")
+                _mnemonicPhrase.value = null
+            } catch (e: Exception) {
+                println("E/WalletViewModel: General error generating mnemonic: ${e.message}")
+                _mnemonicPhrase.value = null
+            }
+        }
+    }
+
+    /**
+     * Imports a wallet from a given Mnemonic Phrase and updates the UI states.
+     * Also derives the Ethereum address from the restored wallet.
+     * @param mnemonic A list of words representing the mnemonic phrase.
+     */
+    fun importWalletFromMnemonic(mnemonic: List<String>) {
+        viewModelScope.launch {
+            try {
+                val restoredWallet = walletManager.restoreWalletFromMnemonic(mnemonic)
+                _currentWallet.value = restoredWallet
+                // Extract and store the address
+                val privateKey = walletManager.getPrivateKeyFromWallet(restoredWallet)
+                val address = walletManager.getEthAddressFromPrivateKey(privateKey)
+                _walletAddress.value = address
+
+                println("D/WalletViewModel: Wallet imported successfully. Address: ${address}")
+                // TODO: You would typically save this wallet securely here (next steps)
+                // You might also navigate to the main wallet screen or update balance here
+            } catch (e: MnemonicException.MnemonicLengthException) {
+                println("E/WalletViewModel: Invalid mnemonic length: ${e.message}")
+                // TODO: Update UI error state
+            } catch (e: MnemonicException.MnemonicChecksumException) {
+                println("E/WalletViewModel: Invalid mnemonic checksum: ${e.message}")
+                // TODO: Update UI error state
+            } catch (e: MnemonicException) {
+                println("E/WalletViewModel: Invalid mnemonic: ${e.message}")
+                // TODO: Update UI error state
+            } catch (e: IllegalStateException) {
+                println("E/WalletViewModel: Wallet key extraction error: ${e.message}")
+                // TODO: Update UI error state
+            } catch (e: Exception) {
+                println("E/WalletViewModel: General error importing wallet: ${e.message}")
+                // TODO: Update UI error state
+            }
+        }
+    }
+
+    /**
+     * Clears the current mnemonic and wallet states.
+     * Useful when logging out or preparing for a new wallet creation/import process.
+     */
+    fun clearWalletState() {
+        _mnemonicPhrase.value = null
+        _currentWallet.value = null
+        _walletAddress.value = null
+        _walletBalance.value = "0.0 ETH"
+        println("D/WalletViewModel: Wallet state cleared.")
+    }
+
 }
