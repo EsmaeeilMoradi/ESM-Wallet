@@ -28,12 +28,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.esm.esmwallet.data.db.AppDatabase
 import com.esm.esmwallet.data.remote.AlchemyApiService
 import com.esm.esmwallet.data.remote.Web3jClient
 import com.esm.esmwallet.data.repository.Erc20Repository
@@ -76,11 +78,21 @@ sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: 
 fun MainScreen() {
     val navController = rememberNavController()
     val sharedWalletViewModel: WalletViewModel = viewModel()
+
+    // Get context to build database
+    val context = LocalContext.current // <-- Add this import: androidx.compose.ui.platform.LocalContext
+
+    // Initialize AppDatabase and CustomTokenDao
+    val appDatabase = remember { AppDatabase.getDatabase(context) }
+    val customTokenDao = remember { appDatabase.customTokenDao() }
+
+
     val erc20ViewModel: Erc20ViewModel = viewModel(
         factory = Erc20ViewModel.Factory(
             repository = Erc20Repository(
                 alchemyApiService = AlchemyApiService(Web3jClient.buildWeb3j())
-            )
+            ),
+            customTokenDao = customTokenDao // <-- Pass customTokenDao here
         )
     )
     val items = listOf(
