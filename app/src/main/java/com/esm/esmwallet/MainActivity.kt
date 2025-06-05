@@ -2,25 +2,18 @@ package com.esm.esmwallet
 
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -33,12 +26,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -48,14 +39,18 @@ import com.esm.esmwallet.data.db.AppDatabase
 import com.esm.esmwallet.data.remote.AlchemyApiService
 import com.esm.esmwallet.data.remote.Web3jClient
 import com.esm.esmwallet.data.repository.Erc20Repository
+import com.esm.esmwallet.navigation.Screen
+import com.esm.esmwallet.presentation.createwallet.CreateWalletScreen
 import com.esm.esmwallet.presentation.history.TransactionHistoryScreen
 import com.esm.esmwallet.presentation.home.HomeScreen
 import com.esm.esmwallet.presentation.importtoken.ImportTokenScreen
+import com.esm.esmwallet.presentation.importwallet.ImportWalletScreen
 import com.esm.esmwallet.presentation.receive.ReceiveScreen
 import com.esm.esmwallet.presentation.send.SendScreen
 import com.esm.esmwallet.presentation.token.TokenSelectionScreen
 import com.esm.esmwallet.presentation.viewmodel.Erc20ViewModel
 import com.esm.esmwallet.presentation.viewmodel.WalletViewModel
+import com.esm.esmwallet.presentation.welcome.WelcomeScreen
 import com.esm.esmwallet.ui.theme.ESMWalletTheme
 
 class MainActivity : ComponentActivity() {
@@ -100,11 +95,10 @@ fun MainScreen() {
         factory = Erc20ViewModel.Factory(
             repository = Erc20Repository(
                 alchemyApiService = AlchemyApiService(Web3jClient.buildWeb3j())
-            ),
-            customTokenDao = customTokenDao // <-- Pass customTokenDao here
+            ), customTokenDao = customTokenDao // <-- Pass customTokenDao here
         )
     )
-    val items = listOf(
+    val bottomNavItems = listOf(
         BottomNavItem.Home,
         BottomNavItem.Trending,
         BottomNavItem.Swap,
@@ -112,75 +106,58 @@ fun MainScreen() {
         BottomNavItem.Discover,
         BottomNavItem.History
     )
+    val walletAddress by sharedWalletViewModel.walletAddress.collectAsState()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
-    Scaffold(topBar = {
-        CenterAlignedTopAppBar(
-            title = { Text("ESM Wallet") })
-    }, bottomBar = {
-        NavigationBar {
-            val navBackStackEntry = navController.currentBackStackEntryAsState()
-            val currentRoute = navBackStackEntry.value?.destination?.route
+    val showBottomBar = walletAddress != null && bottomNavItems.any { it.route == currentRoute }
 
-            items.forEach { item ->
-                NavigationBarItem(
-                    icon = { Icon(item.icon, contentDescription = item.title) },
-                    label = { Text(item.title) },
-                    selected = currentRoute == item.route,
-                    onClick = {
-                        navController.navigate(item.route) {
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    })
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("ESM Wallet") })
+        },
+
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar {
+                    val navBackStackEntry = navController.currentBackStackEntryAsState()
+                    val currentRoute = navBackStackEntry.value?.destination?.route
+
+                    bottomNavItems.forEach { item ->
+                        NavigationBarItem(
+                            icon = { Icon(item.icon, contentDescription = item.title) },
+                            label = { Text(item.title) },
+                            selected = currentRoute == item.route,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            })
+                    }
+                }
             }
         }
-    }) { innerPadding ->
-        NavHost(navController, startDestination = BottomNavItem.Home.route) {
+    ) { innerPadding ->
+//        NavHost(navController, startDestination = BottomNavItem.Home.route) {
+        NavHost(navController, startDestination = Screen.Welcome.route, modifier = Modifier.padding(innerPadding)) { // شروع از WelcomeScreen
 
+
+            composable(Screen.Welcome.route) {
+                WelcomeScreen(navController = navController)
+            }
+            composable(Screen.CreateWallet.route) {
+                CreateWalletScreen(navController = navController, walletViewModel = sharedWalletViewModel)
+            }
+            composable(Screen.ImportWallet.route) {
+                ImportWalletScreen(navController = navController, walletViewModel = sharedWalletViewModel)
+            }
             composable(BottomNavItem.Home.route) { backStackEntry ->
-//                HomeScreen(paddingValues = innerPadding, walletViewModel = sharedWalletViewModel)
-                // --- TEMPORARY TEST CODE for Mnemonic generation ---
-                val context = LocalContext.current
-                val mnemonic by sharedWalletViewModel.mnemonicPhrase.collectAsState()
-
-                Column(
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(text = "Welcome to ESM Wallet!", style = MaterialTheme.typography.headlineMedium)
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    Button(onClick = {
-                        sharedWalletViewModel.generateNewMnemonic()
-                    }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Generate New Mnemonic (for testing)")
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    mnemonic?.let {
-                        Text(text = "Your Mnemonic: ${it.joinToString(" ")}")
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = {
-                            // Example of importing, this will be in a separate screen later
-                            sharedWalletViewModel.importWalletFromMnemonic(it)
-                            Toast.makeText(context, "Wallet imported from generated mnemonic!", Toast.LENGTH_SHORT).show()
-                        }) {
-                            Text("Import generated Mnemonic (for testing)")
-                        }
-                    }
-
-                    sharedWalletViewModel.walletAddress.collectAsState().value?.let { address ->
-                        Text(text = "Wallet Address: $address")
-                    }
-
-                }
+                HomeScreen(paddingValues = innerPadding, walletViewModel = sharedWalletViewModel)
             }
 
             composable(BottomNavItem.Trending.route) { backStackEntry ->
@@ -201,7 +178,7 @@ fun MainScreen() {
             composable(BottomNavItem.Discover.route) {
                 Text(text = "Discover Screen Content", modifier = Modifier.padding(innerPadding))
             }
-            composable("send_screen") { backStackEntry ->
+            composable(Screen.Send.route) { backStackEntry ->
                 SendScreen(
                     navController = navController,
                     paddingValues = innerPadding,
@@ -209,7 +186,7 @@ fun MainScreen() {
                 )
             }
 
-            composable("token_selection_screen") { backStackEntry ->
+            composable(Screen.TokenSelection.route) { backStackEntry ->
                 TokenSelectionScreen(
                     navController = navController,
                     paddingValues = innerPadding,
@@ -218,11 +195,10 @@ fun MainScreen() {
             }
             composable(BottomNavItem.History.route) { // New composable route for History
                 TransactionHistoryScreen(
-                    paddingValues = innerPadding,
-                    walletViewModel = sharedWalletViewModel
+                    paddingValues = innerPadding, walletViewModel = sharedWalletViewModel
                 )
             }
-            composable("import_token") {
+            composable(Screen.ImportToken.route) {
                 val tokenInfoState by erc20ViewModel.tokenInfo.collectAsState()
                 val isLoading by erc20ViewModel.isLoading.collectAsState()
                 val snackbarMessage by erc20ViewModel.snackbarMessage.collectAsState()
@@ -249,10 +225,13 @@ fun MainScreen() {
                             contractAddressInput = contractAddress
                         } else {
                             erc20ViewModel.dismissSnackbar()
-                            erc20ViewModel.snackbarMessage.value .equals("Contract address cannot be empty.")
+                            erc20ViewModel.snackbarMessage.value.equals("Contract address cannot be empty.")
                         }
 
-                        Log.d("ImportTokenScreen", "Import clicked: $contractAddress, $name, $symbol, $decimals")
+                        Log.d(
+                            "ImportTokenScreen",
+                            "Import clicked: $contractAddress, $name, $symbol, $decimals"
+                        )
                     },
                     isLoading = isLoading,
                     snackbarMessage = snackbarMessage,
@@ -264,8 +243,7 @@ fun MainScreen() {
                     onContractAddressChange = { contractAddressInput = it },
                     onTokenNameChange = { tokenNameInput = it },
                     onTokenSymbolChange = { tokenSymbolInput = it },
-                    onTokenDecimalsChange = { tokenDecimalsInput = it }
-                )
+                    onTokenDecimalsChange = { tokenDecimalsInput = it })
             }
 
         }
