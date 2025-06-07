@@ -67,7 +67,8 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
 
     private val _walletBalance = MutableStateFlow<String>("0.0 ETH") // Initial balance, can be updated later
     val walletBalance: StateFlow<String> = _walletBalance // Expose as StateFlow
-
+    private val _isImportingWallet = MutableStateFlow(false)
+    val isImportingWallet: StateFlow<Boolean> = _isImportingWallet.asStateFlow()
     init {
         loadInitialTokens()
         generateAndLogMnemonic()
@@ -77,7 +78,7 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
                 "Attempting to fetch ETH balance from Etherscan via getEthBalanceForTest()..."
             )
             val result =
-                walletRepository.getEthBalanceForTest(testWalletAddress) // با آدرس ولت تست فراخوانی شود
+                walletRepository.getEthBalanceForTest(testWalletAddress)
             result.onSuccess { balance ->
                 Log.d("EtherscanTest", "SUCCESS! ETH Balance from Etherscan (init): $balance")
             }.onFailure { error ->
@@ -372,32 +373,27 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
      */
     fun importWalletFromMnemonic(mnemonic: List<String>) {
         viewModelScope.launch {
+            _isImportingWallet.value = true
             try {
                 val restoredWallet = walletManager.restoreWalletFromMnemonic(mnemonic)
                 _currentWallet.value = restoredWallet
-                // Extract and store the address
                 val privateKey = walletManager.getPrivateKeyFromWallet(restoredWallet)
                 val address = walletManager.getEthAddressFromPrivateKey(privateKey)
                 _walletAddress.value = address
 
                 println("D/WalletViewModel: Wallet imported successfully. Address: ${address}")
-                // TODO: You would typically save this wallet securely here (next steps)
-                // You might also navigate to the main wallet screen or update balance here
             } catch (e: MnemonicException.MnemonicLengthException) {
                 println("E/WalletViewModel: Invalid mnemonic length: ${e.message}")
-                // TODO: Update UI error state
             } catch (e: MnemonicException.MnemonicChecksumException) {
                 println("E/WalletViewModel: Invalid mnemonic checksum: ${e.message}")
-                // TODO: Update UI error state
             } catch (e: MnemonicException) {
                 println("E/WalletViewModel: Invalid mnemonic: ${e.message}")
-                // TODO: Update UI error state
             } catch (e: IllegalStateException) {
                 println("E/WalletViewModel: Wallet key extraction error: ${e.message}")
-                // TODO: Update UI error state
             } catch (e: Exception) {
                 println("E/WalletViewModel: General error importing wallet: ${e.message}")
-                // TODO: Update UI error state
+            } finally {
+                _isImportingWallet.value = false
             }
         }
     }
