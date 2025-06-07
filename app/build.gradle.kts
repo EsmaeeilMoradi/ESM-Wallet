@@ -143,6 +143,7 @@ dependencies {
     implementation(libs.abi)
     implementation(libs.utils)
     implementation(libs.parity)
+    implementation(libs.accompanist.flowlayout)
     ksp(libs.androidx.room.compiler)
 
 
