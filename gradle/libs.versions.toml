@@ -28,6 +28,9 @@ abi = "5.0.0"
 utils = "5.0.0"
 parity = "5.0.0"
 accompanistFlowlayout = "0.36.0"
+datastorePreferences = "1.1.7"
+datastorePreferencesCore = "1.1.7"
+securityCrypto = "1.1.0-beta01"
 
 # Dagger Hilt
 # hilt = "2.51.1"
@@ -69,6 +72,9 @@ abi = { group = "org.web3j", name = "abi", version.ref = "abi" }
 utils = { group = "org.web3j", name = "utils", version.ref = "utils" }
 parity = { group = "org.web3j", name = "parity", version.ref = "parity" }
 accompanist-flowlayout = { group = "com.google.accompanist", name = "accompanist-flowlayout", version.ref = "accompanistFlowlayout" }
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
+androidx-datastore-preferences-core = { group = "androidx.datastore", name = "datastore-preferences-core", version.ref = "datastorePreferencesCore" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 
 
 [plugins]

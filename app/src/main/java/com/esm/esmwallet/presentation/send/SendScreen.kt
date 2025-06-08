@@ -202,31 +202,31 @@ fun SendScreen(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewSendScreen() {
-    ESMWalletTheme {
-        val mockNavController = rememberNavController()
-        val mockWalletViewModel = object : WalletViewModel() {
-            override val selectedToken: StateFlow<Token?> = MutableStateFlow(
-                Token(
-                    name = "Ethereum",
-                    symbol = "ETH",
-                    balance = "1.234 ETH",
-                    contractAddress = "",
-                    iconResId = R.drawable.eth,
-                    decimals = 18
-                )
-            ).asStateFlow()
-
-            override val sendStatus: StateFlow<String?> = MutableStateFlow(null).asStateFlow()
-
-        }
-        SendScreen(
-            navController = mockNavController,
-            paddingValues = PaddingValues(0.dp),
-            walletViewModel = mockWalletViewModel
-        )
-    }
-}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewSendScreen() {
+//    ESMWalletTheme {
+//        val mockNavController = rememberNavController()
+//        val mockWalletViewModel = object : WalletViewModel() {
+//            override val selectedToken: StateFlow<Token?> = MutableStateFlow(
+//                Token(
+//                    name = "Ethereum",
+//                    symbol = "ETH",
+//                    balance = "1.234 ETH",
+//                    contractAddress = "",
+//                    iconResId = R.drawable.eth,
+//                    decimals = 18
+//                )
+//            ).asStateFlow()
+//
+//            override val sendStatus: StateFlow<String?> = MutableStateFlow(null).asStateFlow()
+//
+//        }
+//        SendScreen(
+//            navController = mockNavController,
+//            paddingValues = PaddingValues(0.dp),
+//            walletViewModel = mockWalletViewModel
+//        )
+//    }
+//}

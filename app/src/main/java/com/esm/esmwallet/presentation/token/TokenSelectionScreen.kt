@@ -137,61 +137,61 @@ fun TokenSelectionItem(
         }
     }
 }
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewTokenSelectionScreen() {
-    ESMWalletTheme {
-        val mockNavController = rememberNavController()
-        val mockWalletViewModel = object : WalletViewModel() {
-            private val _mockTokens = MutableStateFlow(
-
-                listOf(
-                    Token(
-                        name = "Ethereum",
-                        symbol = "ETH",
-                        balance = "1.234 ETH",
-                        contractAddress = "",
-                        iconResId = R.drawable.eth,
-                        decimals = 18
-                    ),
-                    Token(
-                        name = "My Test Token",
-                        symbol = "MTT",
-                        balance = "50000.00 MTT",
-                        contractAddress = "0xe4CB9f751Fe035B6365d233b780cd8c637D80cBe",
-                        iconResId = R.drawable.ic_launcher_foreground,
-                        decimals = 18
-                    ),
-                    Token(
-                        name = "Another Token",
-                        symbol = "ATK",
-                        balance = "10.5 ATK",
-                        contractAddress = "0x...",
-                        iconResId = R.drawable.ic_token_placeholder,
-                        decimals = 6
-                    )
-                )
-            )
-            override val tokens: StateFlow<List<Token>> = _mockTokens.asStateFlow()
-            private lateinit var _mockSelectedToken: MutableStateFlow<Token?>
-
-            init {
-                _mockSelectedToken = MutableStateFlow(_mockTokens.value.firstOrNull())
-            }
-
-            override val selectedToken: StateFlow<Token?>
-                get() = _mockSelectedToken.asStateFlow()
-
-
-            override fun setSelectedToken(token: Token) {
-                _mockSelectedToken.value = token
-            }
-        }
-        TokenSelectionScreen(
-            navController = mockNavController,
-            paddingValues = PaddingValues(0.dp),
-            walletViewModel = mockWalletViewModel
-        )
-    }
-}
+//
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewTokenSelectionScreen() {
+//    ESMWalletTheme {
+//        val mockNavController = rememberNavController()
+//        val mockWalletViewModel = object : WalletViewModel() {
+//            private val _mockTokens = MutableStateFlow(
+//
+//                listOf(
+//                    Token(
+//                        name = "Ethereum",
+//                        symbol = "ETH",
+//                        balance = "1.234 ETH",
+//                        contractAddress = "",
+//                        iconResId = R.drawable.eth,
+//                        decimals = 18
+//                    ),
+//                    Token(
+//                        name = "My Test Token",
+//                        symbol = "MTT",
+//                        balance = "50000.00 MTT",
+//                        contractAddress = "0xe4CB9f751Fe035B6365d233b780cd8c637D80cBe",
+//                        iconResId = R.drawable.ic_launcher_foreground,
+//                        decimals = 18
+//                    ),
+//                    Token(
+//                        name = "Another Token",
+//                        symbol = "ATK",
+//                        balance = "10.5 ATK",
+//                        contractAddress = "0x...",
+//                        iconResId = R.drawable.ic_token_placeholder,
+//                        decimals = 6
+//                    )
+//                )
+//            )
+//            override val tokens: StateFlow<List<Token>> = _mockTokens.asStateFlow()
+//            private lateinit var _mockSelectedToken: MutableStateFlow<Token?>
+//
+//            init {
+//                _mockSelectedToken = MutableStateFlow(_mockTokens.value.firstOrNull())
+//            }
+//
+//            override val selectedToken: StateFlow<Token?>
+//                get() = _mockSelectedToken.asStateFlow()
+//
+//
+//            override fun setSelectedToken(token: Token) {
+//                _mockSelectedToken.value = token
+//            }
+//        }
+//        TokenSelectionScreen(
+//            navController = mockNavController,
+//            paddingValues = PaddingValues(0.dp),
+//            walletViewModel = mockWalletViewModel
+//        )
+//    }
+//}

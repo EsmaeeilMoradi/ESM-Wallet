@@ -17,12 +17,18 @@ import org.web3j.utils.Convert
 import java.math.BigDecimal
 import java.math.RoundingMode
 import com.esm.esmwallet.data.model.Transaction
+import com.esm.esmwallet.data.preferences.WalletDataStore
 import com.esm.esmwallet.data.wallet.WalletManager
 import com.esm.esmwallet.util.Resource
 import org.bitcoinj.crypto.MnemonicException
+import kotlinx.coroutines.flow.first
+import org.bitcoinj.wallet.Wallet
 
 
-open class WalletViewModel ( private val walletManager: WalletManager = WalletManager()): ViewModel() {
+open class WalletViewModel(
+    private val walletManager: WalletManager = WalletManager(),
+    private val walletDataStore: WalletDataStore
+) : ViewModel() {
 
     private val testPrivateKey = "50865d1f1dc2de719049c411a96f1d1be1e42d5af345ff6ec29fd6e53b801e10"
     val testWalletAddress = "0x2c6497d4492cdBAbB38D226353d5C656d4D71eB8"
@@ -56,6 +62,7 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
     fun setSendStatus(status: String?) {
         _sendStatus.value = status
     }
+
     private val _mnemonicPhrase = MutableStateFlow<List<String>?>(null)
     val mnemonicPhrase: StateFlow<List<String>?> = _mnemonicPhrase
 
@@ -65,32 +72,54 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
     private val _walletAddress = MutableStateFlow<String?>(null)
     val walletAddress: StateFlow<String?> = _walletAddress
 
-    private val _walletBalance = MutableStateFlow<String>("0.0 ETH") // Initial balance, can be updated later
+    private val _walletBalance =
+        MutableStateFlow<String>("0.0 ETH") // Initial balance, can be updated later
     val walletBalance: StateFlow<String> = _walletBalance // Expose as StateFlow
     private val _isImportingWallet = MutableStateFlow(false)
+
+    private val _wallet = MutableStateFlow<Wallet?>(null)
+    val wallet: StateFlow<Wallet?> = _wallet.asStateFlow()
+
+    private val _isCreatingWallet = MutableStateFlow(false)
+    val isCreatingWallet: StateFlow<Boolean> = _isCreatingWallet.asStateFlow()
+
     val isImportingWallet: StateFlow<Boolean> = _isImportingWallet.asStateFlow()
+
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _snackbarMessage = MutableStateFlow<String?>(null)
+    val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
+
     init {
         loadInitialTokens()
-        generateAndLogMnemonic()
+//        generateAndLogMnemonic()
+        loadWalletFromStorage()
+
         viewModelScope.launch {
-            Log.d(
-                "EtherscanTest",
-                "Attempting to fetch ETH balance from Etherscan via getEthBalanceForTest()..."
-            )
-            val result =
-                walletRepository.getEthBalanceForTest(testWalletAddress)
-            result.onSuccess { balance ->
-                Log.d("EtherscanTest", "SUCCESS! ETH Balance from Etherscan (init): $balance")
-            }.onFailure { error ->
-                Log.e(
-                    "EtherscanTest",
-                    "ERROR! Failed to fetch ETH Balance from Etherscan (init): ${error.message}"
-                )
+            _walletAddress.value = walletDataStore.getWalletAddress().first()
+            val savedMnemonic = walletDataStore.getMnemonic().first()
+            if (!savedMnemonic.isNullOrBlank()) {
+                _mnemonicPhrase.value = savedMnemonic.split(" ")
+                // If we have a saved mnemonic, try to restore the wallet
+                try {
+                    val restoredWallet = walletManager.restoreWalletFromMnemonic(savedMnemonic.split(" "))
+                    _wallet.value = restoredWallet
+                    // Ensure current address is also set from the restored wallet
+                    val privateKey = walletManager.getPrivateKeyFromWallet(restoredWallet)
+                    val ethAddress = walletManager.getEthAddressFromPrivateKey(privateKey)
+                    _walletAddress.value = ethAddress
+                } catch (e: Exception) {
+                    Log.e("WalletViewModel", "Error restoring wallet from saved mnemonic: ${e.message}")
+                    // Handle error, maybe clear saved data if it's corrupted
+                    clearWalletData()
+                }
             }
         }
 
     }
-
+/*
     private fun generateAndLogMnemonic() {
         viewModelScope.launch {
             try {
@@ -101,7 +130,7 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
             }
         }
     }
-
+*/
 
     private fun loadInitialTokens() {
         viewModelScope.launch {
@@ -340,31 +369,40 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
      * Generates a new Mnemonic Phrase and updates the UI state.
      * @param numWords The desired number of words (12 or 24).
      */
-    fun generateNewMnemonic(numWords: Int = 12) {
+
+    fun createNewWallet() { // Renamed from generateNewMnemonic
         viewModelScope.launch {
+            _isLoading.value = true // Show loading
             try {
-                val newMnemonic = walletManager.generateMnemonic(numWords)
-                _mnemonicPhrase.value = newMnemonic
-                // Optionally, generate wallet immediately after mnemonic
-                // val wallet = walletManager.restoreWalletFromMnemonic(newMnemonic)
-                // _currentWallet.value = wallet
-                // _walletAddress.value = walletManager.getEthAddressFromPrivateKey(walletManager.getPrivateKeyFromWallet(wallet))
-                println("D/WalletViewModel: Mnemonic generated (${newMnemonic.size} words): ${newMnemonic.joinToString(" ")}")
-                // After generating, you might immediately try to import it for testing,
-                // or let the UI trigger the importWalletFromMnemonic
-            } catch (e: MnemonicException) {
-                println("E/WalletViewModel: Mnemonic generation error: ${e.message}")
-                _mnemonicPhrase.value = null // Clear mnemonic on error
-                // TODO: Update a user-facing error message state here (e.g., for a SnackBar)
-            } catch (e: IllegalArgumentException) {
-                println("E/WalletViewModel: Invalid mnemonic word count requested: ${e.message}")
-                _mnemonicPhrase.value = null
+                Log.d("WalletViewModel", "Attempting to create new wallet...")
+                val wallet = walletManager.createNewWallet() // This calls the function in WalletManager
+                _wallet.value = wallet
+
+                val mnemonic = walletManager.getMnemonicFromWallet(wallet)
+                if (mnemonic.isNotEmpty()) {
+                    _mnemonicPhrase.value = mnemonic
+                    walletDataStore.saveMnemonic(mnemonic.joinToString(" ")) // Save mnemonic
+
+                    val privateKey = walletManager.getPrivateKeyFromWallet(wallet)
+                    val ethAddress = walletManager.getEthAddressFromPrivateKey(privateKey)
+                    _walletAddress.value = ethAddress
+                    walletDataStore.saveWalletAddress(ethAddress) // Save address
+                    Log.d("WalletViewModel", "Wallet created successfully. Mnemonic: ${mnemonic.joinToString(" ")}")
+                    Log.d("WalletViewModel", "Wallet Address: $ethAddress")
+                } else {
+                    Log.e("WalletViewModel", "Mnemonic phrase is empty after wallet creation.")
+                    _snackbarMessage.value = "Failed to create wallet: Mnemonic not generated."
+                }
             } catch (e: Exception) {
-                println("E/WalletViewModel: General error generating mnemonic: ${e.message}")
-                _mnemonicPhrase.value = null
+                Log.e("WalletViewModel", "Error creating new wallet: ${e.message}", e)
+                _snackbarMessage.value = "Error creating wallet: ${e.localizedMessage}"
+            } finally {
+                _isLoading.value = false // Hide loading
             }
         }
     }
+
+
 
     /**
      * Imports a wallet from a given Mnemonic Phrase and updates the UI states.
@@ -373,27 +411,24 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
      */
     fun importWalletFromMnemonic(mnemonic: List<String>) {
         viewModelScope.launch {
-            _isImportingWallet.value = true
+            _isLoading.value = true
             try {
-                val restoredWallet = walletManager.restoreWalletFromMnemonic(mnemonic)
-                _currentWallet.value = restoredWallet
-                val privateKey = walletManager.getPrivateKeyFromWallet(restoredWallet)
-                val address = walletManager.getEthAddressFromPrivateKey(privateKey)
-                _walletAddress.value = address
+                Log.d("WalletViewModel", "Attempting to import wallet from mnemonic: ${mnemonic.joinToString(" ")}")
+                val wallet = walletManager.restoreWalletFromMnemonic(mnemonic)
+                _wallet.value = wallet
+                _mnemonicPhrase.value = mnemonic
+                walletDataStore.saveMnemonic(mnemonic.joinToString(" ")) // Save imported mnemonic
 
-                println("D/WalletViewModel: Wallet imported successfully. Address: ${address}")
-            } catch (e: MnemonicException.MnemonicLengthException) {
-                println("E/WalletViewModel: Invalid mnemonic length: ${e.message}")
-            } catch (e: MnemonicException.MnemonicChecksumException) {
-                println("E/WalletViewModel: Invalid mnemonic checksum: ${e.message}")
-            } catch (e: MnemonicException) {
-                println("E/WalletViewModel: Invalid mnemonic: ${e.message}")
-            } catch (e: IllegalStateException) {
-                println("E/WalletViewModel: Wallet key extraction error: ${e.message}")
+                val privateKey = walletManager.getPrivateKeyFromWallet(wallet)
+                val ethAddress = walletManager.getEthAddressFromPrivateKey(privateKey)
+                _walletAddress.value = ethAddress
+                walletDataStore.saveWalletAddress(ethAddress) // Save imported address
+                Log.d("WalletViewModel", "Wallet imported successfully. Address: $ethAddress")
             } catch (e: Exception) {
-                println("E/WalletViewModel: General error importing wallet: ${e.message}")
+                Log.e("WalletViewModel", "Error importing wallet: ${e.message}", e)
+                _snackbarMessage.value = "Error importing wallet: ${e.localizedMessage}"
             } finally {
-                _isImportingWallet.value = false
+                _isLoading.value = false
             }
         }
     }
@@ -402,6 +437,77 @@ open class WalletViewModel ( private val walletManager: WalletManager = WalletMa
      * Clears the current mnemonic and wallet states.
      * Useful when logging out or preparing for a new wallet creation/import process.
      */
+
+    fun clearWalletData() {
+        viewModelScope.launch {
+            walletDataStore.clearWalletData()
+            _wallet.value = null
+            _mnemonicPhrase.value = emptyList()
+            _walletAddress.value = null
+            Log.d("WalletViewModel", "Wallet data cleared.")
+        }
+    }
+
+    fun dismissSnackbar() {
+        _snackbarMessage.value = null
+    }
+
+    // Add this to ensure current wallet is set when the app starts if an address is saved
+    fun loadWalletOnStart() {
+        viewModelScope.launch {
+            val savedAddress = walletDataStore.getWalletAddress().first()
+            if (savedAddress != null) {
+                // If an address is saved, we assume a wallet exists.
+                // You might need to restore the full wallet object here from saved mnemonic
+                // or ensure the wallet object is correctly initialized if the mnemonic is present.
+                // The init block already attempts to do this.
+                _walletAddress.value = savedAddress
+            }
+        }
+    }
+
+    private fun loadWalletFromStorage() {
+        viewModelScope.launch {
+            // Flow برای Mnemonic رو از DataStore دریافت کن
+            walletDataStore.getMnemonic().collect { mnemonicString ->
+                if (mnemonicString != null && mnemonicString.isNotBlank()) {
+                    val mnemonicList = mnemonicString.split(" ")
+                    try {
+                        val restoredWallet = walletManager.restoreWalletFromMnemonic(mnemonicList)
+                        _currentWallet.value = restoredWallet
+                        val privateKey = walletManager.getPrivateKeyFromWallet(restoredWallet)
+                        val address = walletManager.getEthAddressFromPrivateKey(privateKey)
+                        _walletAddress.value = address
+                        _mnemonicPhrase.value = mnemonicList
+
+                        println("D/WalletViewModel: Wallet loaded from storage. Address: $address")
+                    } catch (e: MnemonicException) {
+                        println("E/WalletViewModel: Error loading wallet from storage (invalid mnemonic): ${e.message}")
+                        walletDataStore.clearWalletData()
+                    } catch (e: Exception) {
+                        println("E/WalletViewModel: General error loading wallet from storage: ${e.localizedMessage}")
+                        walletDataStore.clearWalletData()
+                    }
+                } else {
+                    _currentWallet.value = null
+                    _mnemonicPhrase.value = emptyList()
+                    _walletAddress.value = null
+                    println("D/WalletViewModel: No wallet found in storage.")
+                }
+            }
+        }
+    }
+
+    fun logoutWallet() {
+        viewModelScope.launch {
+            walletDataStore.clearWalletData()
+            _currentWallet.value = null
+            _mnemonicPhrase.value = emptyList()
+            _walletAddress.value = null
+            println("D/WalletViewModel: Wallet data cleared.")
+        }
+    }
+
     fun clearWalletState() {
         _mnemonicPhrase.value = null
         _currentWallet.value = null

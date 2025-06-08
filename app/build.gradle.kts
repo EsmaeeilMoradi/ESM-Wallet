@@ -144,6 +144,9 @@ dependencies {
     implementation(libs.utils)
     implementation(libs.parity)
     implementation(libs.accompanist.flowlayout)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.datastore.preferences.core)
+    implementation(libs.androidx.security.crypto)
     ksp(libs.androidx.room.compiler)
 
 

@@ -23,10 +23,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.esm.esmwallet.navigation.Screen
 import com.esm.esmwallet.presentation.viewmodel.WalletViewModel
-import com.google.accompanist.flowlayout.FlowCrossAxisAlignment
-import com.google.accompanist.flowlayout.FlowMainAxisAlignment
 import com.google.accompanist.flowlayout.FlowRow
 import com.esm.esmwallet.R
+import android.util.Log
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,20 +37,30 @@ fun CreateWalletScreen(
     val context = LocalContext.current
     val mnemonic by walletViewModel.mnemonicPhrase.collectAsState()
     val walletAddress by walletViewModel.walletAddress.collectAsState()
+    val isLoading by walletViewModel.isLoading.collectAsState()
+    val snackbarMessage by walletViewModel.snackbarMessage.collectAsState()
 
-    LaunchedEffect(Unit) {
-        if (mnemonic == null) {
-            walletViewModel.generateNewMnemonic(12)
+    val scope = rememberCoroutineScope()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(mnemonic, isLoading) {
+        if (mnemonic.isNullOrEmpty() && !isLoading) {
+            Log.d("CreateWalletScreen", "Mnemonic is null/empty and not loading, calling createNewWallet.")
+            walletViewModel.createNewWallet()
         }
     }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Create New Wallet") }
-            )
+    LaunchedEffect(snackbarMessage) {
+        if (snackbarMessage != null) {
+            scope.launch {
+                snackbarHostState.showSnackbar(message = snackbarMessage!!)
+                walletViewModel.dismissSnackbar()
+            }
         }
-    ) { innerPadding ->
+    }
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,7 +90,8 @@ fun CreateWalletScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                mnemonic?.let { phrase ->
+                val currentMnemonic = mnemonic
+                if (!currentMnemonic.isNullOrEmpty()) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -98,13 +109,11 @@ fun CreateWalletScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             FlowRow(
-                                mainAxisAlignment = FlowMainAxisAlignment.Center,
-                                crossAxisAlignment = FlowCrossAxisAlignment.Center,
                                 mainAxisSpacing = 8.dp,
                                 crossAxisSpacing = 8.dp,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
-                                phrase.forEachIndexed { index, word ->
+                                currentMnemonic.forEachIndexed { index, word ->
                                     SuggestionChip(
                                         onClick = {  },
                                         label = {
@@ -125,14 +134,15 @@ fun CreateWalletScreen(
                                         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                     val clip = ClipData.newPlainText(
                                         "Mnemonic Phrase",
-                                        phrase.joinToString(" ")
+                                        currentMnemonic.joinToString(" ")
                                     )
                                     clipboard.setPrimaryClip(clip)
                                     Toast.makeText(context, "Mnemonic Copied!", Toast.LENGTH_SHORT)
                                         .show()
                                 },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                                enabled = !isLoading
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.content_copy),
@@ -143,7 +153,7 @@ fun CreateWalletScreen(
                             }
                         }
                     }
-                } ?: run {
+                } else {
                     CircularProgressIndicator(modifier = Modifier.size(48.dp))
                     Text("Generating Mnemonic...", modifier = Modifier.padding(top = 16.dp))
                 }
@@ -161,7 +171,9 @@ fun CreateWalletScreen(
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -188,23 +200,14 @@ fun CreateWalletScreen(
 
                 Button(
                     onClick = {
-                        mnemonic?.let {
-                            walletViewModel.importWalletFromMnemonic(it)
-                            navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Welcome.route) {
-                                    inclusive = true
-                                }
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Welcome.route) {
+                                inclusive = true
                             }
-                        } ?: run {
-                            Toast.makeText(
-                                context,
-                                "Mnemonic not generated yet. Please wait.",
-                                Toast.LENGTH_SHORT
-                            ).show()
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = mnemonic != null
+                    enabled = !mnemonic.isNullOrEmpty() && !isLoading
                 ) {
                     Text("I've written it down")
                 }

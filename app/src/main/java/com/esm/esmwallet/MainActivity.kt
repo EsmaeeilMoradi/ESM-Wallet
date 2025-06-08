@@ -36,9 +36,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.esm.esmwallet.data.db.AppDatabase
+import com.esm.esmwallet.data.preferences.WalletDataStore
 import com.esm.esmwallet.data.remote.AlchemyApiService
 import com.esm.esmwallet.data.remote.Web3jClient
 import com.esm.esmwallet.data.repository.Erc20Repository
+import com.esm.esmwallet.data.wallet.WalletManager
 import com.esm.esmwallet.navigation.Screen
 import com.esm.esmwallet.presentation.createwallet.CreateWalletScreen
 import com.esm.esmwallet.presentation.history.TransactionHistoryScreen
@@ -81,10 +83,17 @@ sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
-    val sharedWalletViewModel: WalletViewModel = viewModel()
-
+//    val sharedWalletViewModel: WalletViewModel = viewModel()
     // Get context to build database
     val context = LocalContext.current
+
+    val sharedWalletViewModel: WalletViewModel = remember {
+        val walletManager = WalletManager()
+        // Use `context` directly, as it's the `LocalContext.current` which works for previews
+        // `applicationContext` is not available in @Composable context for previews correctly.
+        val walletDataStore = WalletDataStore(context)
+        WalletViewModel(walletManager, walletDataStore)
+    }
 
     // Initialize AppDatabase and CustomTokenDao
     val appDatabase = remember { AppDatabase.getDatabase(context) }
