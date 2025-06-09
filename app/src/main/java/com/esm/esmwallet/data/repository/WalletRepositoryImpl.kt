@@ -5,8 +5,8 @@ import com.esm.esmwallet.data.model.Transaction
 import com.esm.esmwallet.util.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.bitcoinj.crypto.MnemonicCode
-import org.bitcoinj.crypto.MnemonicException
+// REMOVED: import org.bitcoinj.crypto.MnemonicCode
+// REMOVED: import org.bitcoinj.crypto.MnemonicException
 import org.web3j.crypto.Credentials
 import org.web3j.crypto.RawTransaction
 import org.web3j.crypto.TransactionEncoder
@@ -24,7 +24,7 @@ import org.web3j.abi.datatypes.Type
 import org.web3j.abi.datatypes.Utf8String
 import org.web3j.abi.datatypes.generated.Uint256
 import org.web3j.abi.datatypes.generated.Uint8
-import java.security.SecureRandom
+// REMOVED: import java.security.SecureRandom // No longer needed for generateMnemonicPhrase here
 import java.util.Arrays
 import com.esm.esmwallet.data.remote.EtherscanApi
 import com.esm.esmwallet.data.remote.RetrofitInstance
@@ -34,7 +34,7 @@ import com.esm.esmwallet.BuildConfig
 
 class WalletRepositoryImpl : WalletRepository {
 
-    private val nodeUrl =  BuildConfig.ALCHEMY_NODE_URL
+    private val nodeUrl = BuildConfig.ALCHEMY_NODE_URL
     private val hardcodedApiKey = BuildConfig.ETHERSCAN_API_KEY
     private val etherscanApi: EtherscanApi = RetrofitInstance.api
 
@@ -42,6 +42,7 @@ class WalletRepositoryImpl : WalletRepository {
         Web3j.build(HttpService(nodeUrl))
     }
 
+    // Set to Sepolia testnet chain ID
     private val chainId: Long = 11155111L
 
     override suspend fun getEthBalance(walletAddress: String): BigInteger {
@@ -52,13 +53,12 @@ class WalletRepositoryImpl : WalletRepository {
                     DefaultBlockParameterName.LATEST
                 ).send()
 
-                // *** Alchemy/Web3j ***
                 Log.d("ETH_DEBUG", "----------------------------------------------------")
                 Log.d("ETH_DEBUG", "Calling ethGetBalance for address: $walletAddress")
                 Log.d(
                     "ETH_DEBUG",
                     "EthGetBalance raw response JSON: ${ethGetBalance.jsonrpc}"
-                ) // Shows jsonrpc version
+                )
                 Log.d("ETH_DEBUG", "EthGetBalance ID: ${ethGetBalance.id}")
                 Log.d("ETH_DEBUG", "EthGetBalance result (hex value): ${ethGetBalance.result}")
                 Log.d("ETH_DEBUG", "EthGetBalance hasError: ${ethGetBalance.hasError()}")
@@ -80,7 +80,6 @@ class WalletRepositoryImpl : WalletRepository {
                 val balanceWei = ethGetBalance.balance
                 Log.d("ETH_DEBUG", "EthGetBalance parsed balance (BigInteger Wei): $balanceWei")
                 Log.d("ETH_DEBUG", "----------------------------------------------------")
-
 
                 ethGetBalance.balance
             } catch (e: Exception) {
@@ -322,23 +321,25 @@ class WalletRepositoryImpl : WalletRepository {
         }
     }
 
-    override fun generateMnemonicPhrase(): String {
-        val initialEntropy = ByteArray(16)
-        SecureRandom().nextBytes(initialEntropy)
-        return try {
-            // MnemonicCode uses the English wordlist by default
-            val wordList = MnemonicCode.INSTANCE.toMnemonic(initialEntropy)
-            wordList.joinToString(" ")
-        } catch (e: MnemonicException) {
-            throw RuntimeException("Error generating mnemonic phrase", e)
-        }
-    }
+    // REMOVED: This function is now handled by WalletManager (using MnemonicUtils)
+    // override fun generateMnemonicPhrase(): String {
+    //     val initialEntropy = ByteArray(16)
+    //     SecureRandom().nextBytes(initialEntropy)
+    //     return try {
+    //         // MnemonicCode uses the English wordlist by default
+    //         val wordList = MnemonicCode.INSTANCE.toMnemonic(initialEntropy)
+    //         wordList.joinToString(" ")
+    //     } catch (e: MnemonicException) {
+    //         throw RuntimeException("Error generating mnemonic phrase", e)
+    //     }
+    // }
 
     override suspend fun getEthTransactionHistory(address: String): Resource<List<Transaction>> {
         return withContext(Dispatchers.IO) {
             try {
+                val formattedAddress = addHexPrefix(address)
                 val response = etherscanApi.getNormalTransactions(
-                    address = address,
+                    address = formattedAddress,
                     apiKey = hardcodedApiKey,
                     chainId = chainId.toString()
                 )
@@ -375,8 +376,9 @@ class WalletRepositoryImpl : WalletRepository {
     ): Resource<List<Transaction>> {
         return withContext(Dispatchers.IO) {
             try {
+                val formattedAddress = addHexPrefix(address)
                 val response = etherscanApi.getErc20TokenTransactions(
-                    address = address,
+                    address = formattedAddress,
                     contractAddress = contractAddress,
                     apiKey = hardcodedApiKey,
                     chainId = chainId.toString()
@@ -410,8 +412,10 @@ class WalletRepositoryImpl : WalletRepository {
 
     suspend fun getEthBalanceForTest(walletAddress: String): Result<String> {
         return try {
+            val formattedAddress = addHexPrefix(walletAddress)
+
             val response = etherscanApi.getEthBalance(
-                address = walletAddress,
+                address = formattedAddress,
                 apiKey = hardcodedApiKey,
                 chainId = chainId.toString()
             )
@@ -455,4 +459,7 @@ fun TransactionObject.toTransaction(myAddress: String): Transaction {
         isSent = from.equals(myAddress, ignoreCase = true),
         isReceived = to.equals(myAddress, ignoreCase = true)
     )
+}
+fun addHexPrefix(address: String): String {
+    return if (address.startsWith("0x")) address else "0x$address"
 }

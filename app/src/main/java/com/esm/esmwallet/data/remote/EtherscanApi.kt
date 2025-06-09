@@ -1,6 +1,6 @@
 package com.esm.esmwallet.data.remote
 
-import com.esm.esmwallet.data.remote.response.EtherscanApiResponse
+import com.esm.esmwallet.data.remote.response.EtherscanBalanceResponse
 import com.esm.esmwallet.data.remote.response.EtherscanTxHistoryResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
@@ -15,12 +15,12 @@ interface EtherscanApi {
         @Query("tag") tag: String = "latest",
         @Query("apikey") apiKey: String,
         @Query("chainid") chainId: String
-    ): EtherscanApiResponse
+    ): EtherscanBalanceResponse
 
     @GET("api")
     suspend fun getNormalTransactions(
         @Query("module") module: String = "account",
-        @Query("action") String: String = "txlist",
+        @Query("action") action: String = "txlist",
         @Query("address") address: String,
         @Query("startblock") startBlock: String = "0",
         @Query("endblock") endBlock: String = "99999999",

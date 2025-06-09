@@ -1,5 +1,6 @@
 package com.esm.esmwallet.presentation.history
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,11 +32,24 @@ fun TransactionHistoryScreen(
     walletViewModel: WalletViewModel
 ) {
     val transactionHistory by walletViewModel.transactionHistory.collectAsState()
-    val currentWalletAddress = walletViewModel.testWalletAddress // یا آدرس ولت جاری کاربر را از ViewModel بگیرید
-
+//    val currentWalletAddress = walletViewModel.testWalletAddress // یا آدرس ولت جاری کاربر را از ViewModel بگیرید
+    val currentWalletAddress by walletViewModel.walletAddress.collectAsState()
     LaunchedEffect(key1 = currentWalletAddress) {
-        if (currentWalletAddress.isNotEmpty()) {
-            walletViewModel.fetchTransactionHistory(currentWalletAddress)
+        // اگر currentWalletAddress نال نباشد، وارد بلاک .let می شود.
+        // در غیر این صورت، else بلوک .let اجرا می شود.
+        currentWalletAddress?.let { address ->
+            if (address.isNotBlank()) {
+                Log.d("TransactionHistoryScreen", "Fetching transactions for address: $address")
+                walletViewModel.fetchTransactionHistory(address)
+            } else {
+                Log.w("TransactionHistoryScreen", "Wallet address is blank, not fetching transactions.")
+                // TODO: اینجا میتونی UI رو برای حالت آدرس خالی به روز کنی.
+                // مثلاً: walletViewModel.updateTransactionHistoryState(Resource.Error("Wallet address is blank."))
+            }
+        } ?: run { // این '?: run {}' معادل 'else' برای .let است
+            Log.w("TransactionHistoryScreen", "Wallet address is null, not fetching transactions.")
+            // TODO: اینجا میتونی UI رو برای حالت آدرس نال به روز کنی.
+            // مثلاً: walletViewModel.updateTransactionHistoryState(Resource.Error("Please create or import a wallet."))
         }
     }
 
@@ -65,8 +79,9 @@ fun TransactionHistoryScreen(
                     }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        val validAddress = currentWalletAddress ?: "" // Fallback to empty string if somehow null (less likely with the LaunchedEffect check)
                         items(transactions) { transaction ->
-                            TransactionItem(transaction = transaction, myAddress = currentWalletAddress)
+                            TransactionItem(transaction = transaction, myAddress = validAddress)
                             Divider(modifier = Modifier.padding(vertical = 8.dp))
                         }
                     }

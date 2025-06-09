@@ -31,6 +31,9 @@ accompanistFlowlayout = "0.36.0"
 datastorePreferences = "1.1.7"
 datastorePreferencesCore = "1.1.7"
 securityCrypto = "1.1.0-beta01"
+crypto = "5.0.0"
+bcprovJdk15on = "1.70"
+bcpkixJdk15on = "1.70"
 
 # Dagger Hilt
 # hilt = "2.51.1"
@@ -75,6 +78,9 @@ accompanist-flowlayout = { group = "com.google.accompanist", name = "accompanist
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
 androidx-datastore-preferences-core = { group = "androidx.datastore", name = "datastore-preferences-core", version.ref = "datastorePreferencesCore" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+crypto = { group = "org.web3j", name = "crypto", version.ref = "crypto" }
+bcprov-jdk15on = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bcprovJdk15on" }
+bcpkix-jdk15on = { group = "org.bouncycastle", name = "bcpkix-jdk15on", version.ref = "bcpkixJdk15on" }
 
 
 [plugins]

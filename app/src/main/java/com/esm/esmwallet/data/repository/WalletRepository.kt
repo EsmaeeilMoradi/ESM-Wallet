@@ -30,7 +30,7 @@ interface WalletRepository {
         amount: BigInteger
     ): String
 
-    fun generateMnemonicPhrase(): String
+//    fun generateMnemonicPhrase(): String
     suspend fun getEthTransactionHistory(address: String): Resource<List<Transaction>>
     suspend fun getErc20TransactionHistory(
         address: String,
