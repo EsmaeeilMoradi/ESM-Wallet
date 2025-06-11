@@ -1,22 +1,48 @@
+
+# libs.versions.toml: This file centralizes dependency versions and declarations.
+# It helps manage dependencies across multiple modules and ensures consistency.
+
 [versions]
+# Android Gradle Plugin (AGP) version.
 agp = "8.9.1"
+# Kotlin language version.
 kotlin = "2.1.20"
+
+# AndroidX Core Libraries & Lifecycle
 coreKtx = "1.16.0"
-junit = "4.13.2"
-junitVersion = "1.2.1"
-espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.10.1"
+# Set lifecycleBom to a known stable version. 2.8.7 is the latest official stable BOM.
+# This will force all transitive lifecycle dependencies to 2.8.7 unless explicitly overridden by other BOMs (like composeBom)
+#lifecycleBom = "2.7.0"
+
+# Let's keep Compose, Activity, Navigation versions as they are for now,
+# but be aware they might implicitly request newer lifecycle versions.
+# We are hoping the BOM will force consistency.
 composeBom = "2024.09.00"
+activityCompose = "1.10.1"
 navigationCompose = "2.9.0"
+securityCrypto = "1.1.0-beta01"
+#lifecycleRuntimeKtx = "2.8.7"
+accompanistFlowlayout = "0.36.0"
+
 # Kotlin Coroutines
 kotlinxCoroutines = "1.8.0"
 
-# Web3j
+# Web3j Libraries (Ethereum Blockchain Interaction)
 web3j = "5.0.0"
+abi = "5.0.0"
+utils = "5.0.0"
+parity = "5.0.0"
+crypto = "5.0.0"
+bcprovJdk15on = "1.70"
+bcpkixJdk15on = "1.70"
+
+# QR Code Generation (ZXing)
 zxingAndroidEmbedded = "4.3.0"
 core-zxing = "3.5.3"
-bitcoinjCore = "0.16.1"
+
+
+
+# Networking (Retrofit)
 retrofit = "3.0.0"
 converterGson = "3.0.0"
 loggingInterceptor = "4.12.0"
@@ -24,45 +50,67 @@ loggingInterceptor = "4.12.0"
 # Room
 androidx-room = "2.7.1"
 kspVersion = "2.1.20-1.0.32"
-abi = "5.0.0"
-utils = "5.0.0"
-parity = "5.0.0"
-accompanistFlowlayout = "0.36.0"
+
+# DataStore (Preferences)
 datastorePreferences = "1.1.7"
 datastorePreferencesCore = "1.1.7"
-securityCrypto = "1.1.0-beta01"
-crypto = "5.0.0"
-bcprovJdk15on = "1.70"
-bcpkixJdk15on = "1.70"
+
+# Testing Libraries
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+
 
 # Dagger Hilt
-# hilt = "2.51.1"
+hilt = "2.51.1"
+hiltAndroidTesting = "2.51.1"
+hiltNavigationCompose = "1.2.0" # Latest stable for androidx.hilt
 
 
 [libraries]
+# AndroidX Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
-junit = { group = "junit", name = "junit", version.ref = "junit" }
-androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+
+# Lifecycle BOM to manage all Lifecycle dependencies.
+# The actual versions of lifecycle components (runtime-ktx, livedata-ktx, etc.)
+# will be pulled from this BOM, ensuring compatibility.
+#androidx-lifecycle-bom = { group = "androidx.lifecycle", name = "lifecycle-bom", version.ref = "lifecycleBom" }
+
+
+# Explicitly declare lifecycle components. Their versions are managed by the BOM.
+#androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx" }
+#androidx-lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx" }
+#androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx" } # Added for completeness
+
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+
+# Jetpack Compose
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+accompanist-flowlayout = { group = "com.google.accompanist", name = "accompanist-flowlayout", version.ref = "accompanistFlowlayout" }
+
 # Kotlin Coroutines
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 
+# Web3j
 web3j-core = { group = "org.web3j", name = "core", version.ref = "web3j" }
+abi = { group = "org.web3j", name = "abi", version.ref = "abi" }
+utils = { group = "org.web3j", name = "utils", version.ref = "utils" }
+parity = { group = "org.web3j", name = "parity", version.ref = "parity" }
+crypto = { group = "org.web3j", name = "crypto", version.ref = "crypto" }
+bcprov-jdk15on = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bcprovJdk15on" }
+bcpkix-jdk15on = { group = "org.bouncycastle", name = "bcpkix-jdk15on", version.ref = "bcpkixJdk15on" }
+
+# QR Code
 zxing-android-embedded = { group = "com.journeyapps", name = "zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
 core-zxing = { group = "com.google.zxing", name = "core", version.ref = "core-zxing" }
-bitcoinj-core = { group = "org.bitcoinj", name = "bitcoinj-core", version.ref = "bitcoinjCore" }
+
+# Networking (Retrofit)
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "converterGson" }
 logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "loggingInterceptor" }
@@ -71,21 +119,37 @@ logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-intercep
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "androidx-room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "androidx-room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "androidx-room" }
-abi = { group = "org.web3j", name = "abi", version.ref = "abi" }
-utils = { group = "org.web3j", name = "utils", version.ref = "utils" }
-parity = { group = "org.web3j", name = "parity", version.ref = "parity" }
-accompanist-flowlayout = { group = "com.google.accompanist", name = "accompanist-flowlayout", version.ref = "accompanistFlowlayout" }
+
+# DataStore
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastorePreferences" }
 androidx-datastore-preferences-core = { group = "androidx.datastore", name = "datastore-preferences-core", version.ref = "datastorePreferencesCore" }
-androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
-crypto = { group = "org.web3j", name = "crypto", version.ref = "crypto" }
-bcprov-jdk15on = { group = "org.bouncycastle", name = "bcprov-jdk15on", version.ref = "bcprovJdk15on" }
-bcpkix-jdk15on = { group = "org.bouncycastle", name = "bcpkix-jdk15on", version.ref = "bcpkixJdk15on" }
+
+# Testing
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+# Compose Testing
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+
+## Dagger Hilt Libraries
+#hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+#hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+#hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+#hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+#hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hiltAndroidTesting" }
 
 
 [plugins]
+# Android Application Plugin: Required for the app module.
 android-application = { id = "com.android.application", version.ref = "agp" }
+# Kotlin Android Plugin: Enables Kotlin features for Android.
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+# Kotlin Compose Plugin: Enables Jetpack Compose features.
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+# Kotlin Symbol Processing (KSP) Plugin: Essential for annotation processors like Room and Hilt.
 kotlinAndroidKsp = { id = "com.google.devtools.ksp", version.ref = "kspVersion" }
-
+# Dagger Hilt Android Plugin: The Hilt Gradle plugin.
+#hiltAndroid = { id = "com.google.dagger.hilt.android", version.ref ="hilt" }

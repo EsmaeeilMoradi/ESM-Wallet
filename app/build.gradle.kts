@@ -2,10 +2,16 @@ import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
+    // Android Application Plugin: Essential for Android projects.
     alias(libs.plugins.android.application)
+    // Kotlin Android Plugin: Enables Kotlin features for Android.
     alias(libs.plugins.kotlin.android)
+    // Kotlin Compose Plugin: Enables Jetpack Compose features.
     alias(libs.plugins.kotlin.compose)
+    // Kotlin Symbol Processing (KSP) Plugin: Used for annotation processing (e.g., Room, Hilt).
     alias(libs.plugins.kotlinAndroidKsp)
+    // ADDED FOR HILT: Apply the Hilt Android Gradle plugin to the app module.
+//    alias(libs.plugins.hiltAndroid)
 }
 
 fun getLocalProperty(propertyName: String): String {
@@ -31,10 +37,12 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // Retrieve API keys and URLs from local.properties for security.
         val etherscanApiKey: String = getLocalProperty("ETHERSCAN_API_KEY")
         val alchemyNodeUrl: String = getLocalProperty("ALCHEMY_NODE_URL")
         val alchemyNodeUrlMainnet: String = getLocalProperty("ALCHEMY_NODE_URL_MAINNET")
 
+        // Define build config fields to make these properties accessible in app code.
         buildConfigField("String", "ETHERSCAN_API_KEY", "\"$etherscanApiKey\"")
         buildConfigField("String", "ALCHEMY_NODE_URL", "\"$alchemyNodeUrl\"")
         buildConfigField("String", "ALCHEMY_NODE_URL_MAINNET", "\"$alchemyNodeUrlMainnet\"")
@@ -42,7 +50,10 @@ android {
     }
     buildFeatures {
         buildConfig = true
+        compose = true
+        buildConfig = true
     }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -51,6 +62,7 @@ android {
                 "proguard-rules.pro"
             )
         }
+
         debug {
             /*
             val etherscanApiKey: String = getLocalProperty("ETHERSCAN_API_KEY")
@@ -61,82 +73,106 @@ android {
 
              */
         }
+
     }
+    // Configure Java compatibility for source and target bytecode.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    // Configure Kotlin compilation options.
     kotlinOptions {
         jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
-        buildConfig = true
     }
 }
 
 dependencies {
-    // Import the Compose BOM
+    // --- Compose BOM (Bill of Materials) ---
+    // Manages Compose library versions to ensure compatibility.
     implementation(platform(libs.androidx.compose.bom))
 
-    // AndroidX Core & Lifecycle
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
+    // This will force all transitive lifecycle components to the version defined in lifecycleBom
+//    implementation(platform(libs.androidx.lifecycle.bom))
 
-    // Compose UI
+    // --- AndroidX Core Libraries ---
+    implementation(libs.androidx.core.ktx)
+    // Lifecycle components - their versions are now managed by lifecycle-bom
+//    implementation(libs.androidx.lifecycle.runtime.ktx)
+//    implementation(libs.androidx.lifecycle.livedata.ktx)
+//    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    // --- Jetpack Compose UI Libraries ---
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.activity.compose)
 
-    // Navigation Compose
-    implementation(libs.androidx.navigation.compose)
 
-    // Kotlin Coroutines
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.web3j.core)
-
-    //QR Code generation
-    implementation(libs.zxing.android.embedded)
-    // Core ZXing library
-    implementation(libs.core.zxing)
-
-    //Retrofit
-    implementation(libs.retrofit)
-    implementation(libs.converter.gson)
-    implementation(libs.logging.interceptor)
-
-    // ** ROOM DATABASE **
-    // Room Runtime
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    implementation(libs.abi)
-    implementation(libs.utils)
-    implementation(libs.parity)
-    implementation(libs.accompanist.flowlayout)
-    implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.datastore.preferences.core)
-    implementation(libs.androidx.security.crypto)
-    implementation(libs.crypto)
-    implementation(libs.bcprov.jdk15on)
-    implementation(libs.bcpkix.jdk15on)
-    ksp(libs.androidx.room.compiler)
-
-
-
-
-
-    // Debugging and Testing Compose
+    // --- Compose Tooling (for Preview and Debugging) ---
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
-    // Unit & Instrumentation Tests
+    // --- Navigation ---
+    implementation(libs.androidx.navigation.compose)
+
+
+    // --- Kotlin Coroutines ---
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+
+    // --- Web3j Libraries (Ethereum Blockchain Interaction) ---
+    implementation(libs.web3j.core)
+    implementation(libs.abi)
+    implementation(libs.utils)
+    implementation(libs.parity)
+    implementation(libs.crypto)
+    implementation(libs.bcprov.jdk15on)
+    implementation(libs.bcpkix.jdk15on)
+
+    // --- QR Code Generation ---
+    implementation(libs.zxing.android.embedded)
+    implementation(libs.core.zxing)
+
+    // --- Networking (Retrofit) ---
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
+
+    // --- Room Database ---
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // --- DataStore (Preferences) ---
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.datastore.preferences.core)
+
+    // --- Android Security (for Encrypted DataStore) ---
+    implementation(libs.androidx.security.crypto)
+
+    // --- Accompanist Libraries ---
+    implementation(libs.accompanist.flowlayout)
+
+    // --- Unit & Instrumentation Tests ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
+
+    // --- Dagger Hilt Dependencies (ADDED FOR HILT) ---
+    // Core Hilt library for Android
+//    implementation(libs.hilt.android)
+//    // Hilt annotation processor (ksp for Kotlin)
+//    ksp(libs.hilt.android.compiler)
+//    ksp(libs.hilt.compiler)
+//    // Hilt integration with Navigation Compose for ViewModels
+//    implementation(libs.hilt.navigation.compose)
+//    // Hilt for Android test support
+//    androidTestImplementation(libs.hilt.android.testing)
+//    kspAndroidTest(libs.hilt.android.compiler)
+//    kspAndroidTest(libs.hilt.compiler)
+
 
 }
