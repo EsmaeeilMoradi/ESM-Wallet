@@ -2,6 +2,7 @@ package com.esm.esmwallet.navigation
 
 sealed class Screen(val route: String) {
     object Welcome : Screen("welcome_screen")
+    object Onboarding : Screen("Onboarding_screen")
     object CreateWallet : Screen("create_wallet_screen")
     object ImportWallet : Screen("import_wallet_screen")
 

@@ -1,3 +1,16 @@
 <resources>
     <string name="app_name">ESM Wallet</string>
+
+
+    <!--Onboarding-->
+
+    <string name="Onboarding_Wallet_Screen2Title">Unchain Assets</string>
+    <string name="Onboarding_Wallet_Screen2Description">Don\'t lock yourself in and don\'t let others do that to you.</string>
+    <string name="Onboarding_Wallet_Screen3Title">Go Borderless</string>
+    <string name="Onboarding_Wallet_Screen3Description">Bypass conditional barriers and access markets globally.</string>
+    <string name="Onboarding_Wallet_Screen4Title">Stay Private</string>
+    <string name="Onboarding_Wallet_Screen4Description">Do not leak your private and financial data to the world.</string>
+
+
+
 </resources>
