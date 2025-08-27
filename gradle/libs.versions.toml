@@ -64,7 +64,8 @@ espressoCore = "3.6.1"
 # Dagger Hilt
 hilt = "2.51.1"
 hiltAndroidTesting = "2.51.1"
-hiltNavigationCompose = "1.2.0" # Latest stable for androidx.hilt
+hiltNavigationCompose = "1.2.0"
+cronetEmbedded = "119.6045.31" # Latest stable for androidx.hilt
 
 
 [libraries]
@@ -133,6 +134,7 @@ androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+cronet-embedded = { group = "org.chromium.net", name = "cronet-embedded", version.ref = "cronetEmbedded" }
 
 ## Dagger Hilt Libraries
 #hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
