@@ -65,11 +65,15 @@ fun RootNavGraph(dependencyGraph: DependencyGraph) {
     // A separate state that handles the bottom bar visibility
     val isBottomBarVisible =
         walletAddress != null && bottomNavItems.any { it.route == currentRoute }
+    val isTopBarVisible =
+        bottomNavItems.any { it.route == currentRoute }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("ESM Wallet") })
+            if (isTopBarVisible) {
+                CenterAlignedTopAppBar(
+                    title = { Text("ESM Wallet") })
+            }
         },
 
         bottomBar = {

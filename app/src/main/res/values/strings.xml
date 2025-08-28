@@ -12,5 +12,9 @@
     <string name="Onboarding_Wallet_Screen4Description">Do not leak your private and financial data to the world.</string>
 
 
+    <string name="welcome_screen_image_description">Wallet icon</string>
+    <string name="welcome_button_new_wallet">New Wallet</string>
+    <string name="welcome_button_import_wallet">Import Wallet</string>
+    <string name="welcome_button_watch_address">Watch Address</string>
 
 </resources>
