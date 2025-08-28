@@ -17,4 +17,11 @@
     <string name="welcome_button_import_wallet">Import Wallet</string>
     <string name="welcome_button_watch_address">Watch Address</string>
 
+    <string name="watch_address_screen_title">Watch Address</string>
+    <string name="watch_address_field_name_label">Name</string>
+    <string name="watch_address_field_address_label">Paste public address or XPUB</string>
+    <string name="watch_address_button_watch">Watch</string>
+    <string name="back_button_desc">Back</string>
+
+
 </resources>

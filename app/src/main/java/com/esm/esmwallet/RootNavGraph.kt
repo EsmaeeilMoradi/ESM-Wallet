@@ -35,6 +35,7 @@ import com.esm.esmwallet.presentation.receive.ReceiveScreen
 import com.esm.esmwallet.presentation.send.SendScreen
 import com.esm.esmwallet.presentation.token.TokenSelectionScreen
 import com.esm.esmwallet.presentation.viewmodel.Erc20ViewModel
+import com.esm.esmwallet.presentation.watch_address.WatchAddressScreen
 import com.esm.esmwallet.presentation.welcome.WelcomeScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,6 +115,13 @@ fun RootNavGraph(dependencyGraph: DependencyGraph) {
                         factory = dependencyGraph.onboardingViewModelFactory
                     )
                     OnboardingScreen(viewModel = onboardingViewModel, navController = navController)
+                }
+
+                composable(route = Screen.Welcome.route) {
+                    WelcomeScreen(navController = navController)
+                }
+                composable(route = Screen.WatchAddress.route) {
+                    WatchAddressScreen(navController = navController)
                 }
 
                 composable(Screen.Welcome.route) {

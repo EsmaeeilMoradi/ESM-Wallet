@@ -85,8 +85,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(
-//                onClick = { navController.navigate(Screen.WatchAddress.route) },
-                onClick = { },
+                onClick = { navController.navigate(Screen.WatchAddress.route) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium
             ) {
