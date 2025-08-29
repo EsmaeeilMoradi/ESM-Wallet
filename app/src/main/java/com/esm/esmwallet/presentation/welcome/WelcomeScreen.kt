@@ -56,7 +56,9 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { navController.navigate(Screen.CreateWallet.route) },
+                onClick = {
+                    navController.navigate(Screen.SecurityTerms.passNextRoute(Screen.CreateWallet.route))
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium
             ) {
@@ -70,7 +72,9 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(
-                onClick = { navController.navigate(Screen.ImportWallet.route) },
+                onClick = {
+                    navController.navigate(Screen.SecurityTerms.passNextRoute(Screen.ImportWallet.route))
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium
             ) {

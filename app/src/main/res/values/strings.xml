@@ -23,5 +23,9 @@
     <string name="watch_address_button_watch">Watch</string>
     <string name="back_button_desc">Back</string>
 
-
+    <string name="security_terms_title">Security Terms</string>
+    <string name="security_terms_desc_1">Securely backup recovery phrases for each wallet. It\'s the only way to regain access to funds if the app malfunctions.</string>
+    <string name="security_terms_desc_2">Disabling unlock PIN (code) on the smartphone deletes all wallets from the app. Recovery phrases will be needed to restore access to funds.</string>
+    <string name="next_button_text">Next</string>
+    <string name="close_button_desc">Close</string>
 </resources>

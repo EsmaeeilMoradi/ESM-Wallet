@@ -3,6 +3,11 @@ package com.esm.esmwallet.navigation
 sealed class Screen(val route: String) {
     object Welcome : Screen("welcome_screen")
     object WatchAddress : Screen("watch_address_screen")
+     object SecurityTerms : Screen("security_terms_screen/{nextRoute}") {
+        fun passNextRoute(nextRoute: String): String {
+            return "security_terms_screen/$nextRoute"
+        }
+    }
     object Onboarding : Screen("Onboarding_screen")
     object CreateWallet : Screen("create_wallet_screen")
     object ImportWallet : Screen("import_wallet_screen")
