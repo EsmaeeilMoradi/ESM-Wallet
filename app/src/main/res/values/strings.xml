@@ -28,4 +28,13 @@
     <string name="security_terms_desc_2">Disabling unlock PIN (code) on the smartphone deletes all wallets from the app. Recovery phrases will be needed to restore access to funds.</string>
     <string name="next_button_text">Next</string>
     <string name="close_button_desc">Close</string>
+
+
+    <string name="new_wallet_title">New Wallet</string>
+    <string name="create_button_text">CREATE</string>
+    <string name="wallet_name_label">Name</string>
+    <string name="delete_button_desc">Clear name</string>
+    <string name="advanced_settings_label">Advanced</string>
+    <string name="advanced_settings_desc">Advanced settings</string>
+    <string name="wallet_icon_desc">Wallet icon</string>
 </resources>

@@ -57,7 +57,7 @@ fun WelcomeScreen(
 
             Button(
                 onClick = {
-                    navController.navigate(Screen.SecurityTerms.passNextRoute(Screen.CreateWallet.route))
+                    navController.navigate(Screen.SecurityTerms.passNextRoute(Screen.NewWallet.route)) // <-- CHANGE THIS LINE
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium

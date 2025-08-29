@@ -32,6 +32,7 @@ import com.esm.esmwallet.presentation.history.TransactionHistoryScreen
 import com.esm.esmwallet.presentation.home.HomeScreen
 import com.esm.esmwallet.presentation.importtoken.ImportTokenScreen
 import com.esm.esmwallet.presentation.importwallet.ImportWalletScreen
+import com.esm.esmwallet.presentation.new_wallet.NewWalletScreen
 import com.esm.esmwallet.presentation.onboarding.OnboardingScreen
 import com.esm.esmwallet.presentation.onboarding.OnboardingViewModel
 import com.esm.esmwallet.presentation.receive.ReceiveScreen
@@ -136,6 +137,9 @@ fun RootNavGraph(dependencyGraph: DependencyGraph) {
                         navController = navController,
                         nextRoute = nextRoute
                     )
+                }
+                composable(route = Screen.NewWallet.route) {
+                    NewWalletScreen(navController = navController)
                 }
                 composable(route = Screen.WatchAddress.route) {
                     WatchAddressScreen(navController = navController)

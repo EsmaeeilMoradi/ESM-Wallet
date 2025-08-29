@@ -8,6 +8,8 @@ sealed class Screen(val route: String) {
             return "security_terms_screen/$nextRoute"
         }
     }
+    object NewWallet : Screen("new_wallet_screen")
+
     object Onboarding : Screen("Onboarding_screen")
     object CreateWallet : Screen("create_wallet_screen")
     object ImportWallet : Screen("import_wallet_screen")

@@ -35,6 +35,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.esm.esmwallet.R
+import com.esm.esmwallet.navigation.Screen
 import com.esm.esmwallet.ui.theme.ESMWalletTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,9 +52,11 @@ fun SecurityTermsScreen(
         viewModel.eventFlow.collect { event ->
             when (event) {
                 is SecurityTermsEvent.NavigateToNextScreen -> {
-                    // Navigate to the correct destination
+                    // Navigate to the correct destination using the passed-in route
                     if (nextRoute != null) {
-                        navController.navigate(nextRoute)
+                        navController.navigate(nextRoute) {
+                            popUpTo(Screen.SecurityTerms.route) { inclusive = true }
+                        }
                     }
                 }
             }
